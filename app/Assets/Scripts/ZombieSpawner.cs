@@ -82,6 +82,32 @@ public class ZombieSpawner : MonoBehaviour
         {
             StartCoroutine(MonitorPlanes());
             Debug.Log("ZombieSpawner: System initialized successfully!");
+            
+            // Find and connect to the Continue button
+            ConnectToContinueButton();
+        }
+    }
+    
+    void ConnectToContinueButton()
+    {
+        // Find the Continue button in the UI
+        GameObject continueButtonObj = GameObject.Find("Continue Button");
+        if (continueButtonObj != null)
+        {
+            UnityEngine.UI.Button continueButton = continueButtonObj.GetComponent<UnityEngine.UI.Button>();
+            if (continueButton != null)
+            {
+                continueButton.onClick.AddListener(EnableZombieSpawning);
+                Debug.Log("ZombieSpawner: Connected to Continue button successfully!");
+            }
+            else
+            {
+                Debug.LogWarning("ZombieSpawner: Continue Button found but it doesn't have a Button component!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ZombieSpawner: Couldn't find Continue Button in the scene!");
         }
     }
     
@@ -123,24 +149,72 @@ public class ZombieSpawner : MonoBehaviour
             return;
         }
         
+        // Add required components to the camera
+        AddRequiredCameraComponents();
+        
         systemReady = true;
+    }
+    
+    void AddRequiredCameraComponents()
+    {
+        if (arCamera != null)
+        {
+            // Add CrosshairController if it doesn't exist
+            if (arCamera.GetComponent<CrosshairController>() == null)
+            {
+                arCamera.gameObject.AddComponent<CrosshairController>();
+                Debug.Log("ZombieSpawner: Added CrosshairController to Main Camera");
+            }
+            
+            // Add ZombieShooter if it doesn't exist
+            if (arCamera.GetComponent<ZombieShooter>() == null)
+            {
+                ZombieShooter shooter = arCamera.gameObject.AddComponent<ZombieShooter>();
+                Debug.Log("ZombieSpawner: Added ZombieShooter to Main Camera");
+                
+                // Connect the ZombieShooter to the ZombieHealth components
+                shooter.damage = 25; // Set a reasonable damage value
+            }
+        }
     }
     
     IEnumerator MonitorPlanes()
     {
+        int planeCheckCounter = 0;
+        
         while (systemReady)
         {
             // Check for new planes every half second
             yield return new WaitForSeconds(0.5f);
             
+            planeCheckCounter++;
+            if (planeCheckCounter % 10 == 0) // Log every 5 seconds
+            {
+                Debug.Log($"ZombieSpawner: Checking for AR planes. Current status: hasFoundFloor={hasFoundFloor}, spawningEnabled={spawningEnabled}, planeManager={planeManager != null}");
+                if (planeManager != null)
+                {
+                    Debug.Log($"ZombieSpawner: Number of tracked planes: {planeManager.trackables.count}");
+                }
+            }
+            
             if (planeManager != null)
             {
+                if (planeManager.trackables.count > 0 && planeCheckCounter % 10 == 0)
+                {
+                    Debug.Log("ZombieSpawner: AR planes detected:");
+                    foreach (var plane in planeManager.trackables)
+                    {
+                        Debug.Log($"ZombieSpawner: Plane {plane.trackableId} - Alignment: {plane.alignment}, Center: {plane.center}, Size: {plane.size}");
+                    }
+                }
+                
                 foreach (var plane in planeManager.trackables)
                 {
                     // Check if we've already processed this plane
                     if (!processedPlanes.Contains(plane.trackableId))
                     {
                         processedPlanes.Add(plane.trackableId);
+                        Debug.Log($"ZombieSpawner: Processing new plane {plane.trackableId} - Alignment: {plane.alignment}, Center: {plane.center}");
                         ProcessNewPlane(plane);
                     }
                 }
