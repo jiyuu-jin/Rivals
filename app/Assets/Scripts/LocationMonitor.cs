@@ -64,7 +64,7 @@ public class LocationMonitor : MonoBehaviour
                 Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
                 string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
-                using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/movement", json_body, "application/json"))
+                using (UnityWebRequest www = UnityWebRequest.Post("http://10.178.193.68:3000/api/movement", json_body, "application/json"))
                 {
                     yield return www.SendWebRequest();
 

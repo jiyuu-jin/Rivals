@@ -25,17 +25,16 @@ export async function POST(request: NextRequest) {
         FROM traps
         ORDER BY distance_miles ASC
     `;
-    
     console.log("All traps with distances: ", JSON.stringify(allTraps, null, 2));
 
-    const range = 0.1;
+    const range = 0.005;
     
     // Now filter with a more liberal range (1 mile = 1609.34 meters)
     const result = await db`
         SELECT * FROM traps
         WHERE location <@> point(${movement.longitude}, ${movement.latitude}) <= ${range}
     `;
-    console.log("Traps within 1 mile: ", JSON.stringify(result));
+    console.log("Traps within threshold: ", JSON.stringify(result));
 
     return NextResponse.json({ message: "Movement received", result });
 }
