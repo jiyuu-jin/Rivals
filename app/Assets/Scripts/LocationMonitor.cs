@@ -2,16 +2,29 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Android;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.Networking;
+using System;
+using UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets;
 
 public class LocationMonitor : MonoBehaviour
 {
     private IEnumerator coroutine;
 
+    ObjectSpawner m_ObjectSpawner;
+
     void Start()
     {
         coroutine = Routine();
         StartCoroutine(coroutine);
+
+        if (m_ObjectSpawner == null)
+#if UNITY_2023_1_OR_NEWER
+            m_ObjectSpawner = FindAnyObjectByType<ObjectSpawner>();
+#else
+            m_ObjectSpawner = FindObjectOfType<ObjectSpawner>();
+#endif
+
     }
 
     IEnumerator Routine()
@@ -64,13 +77,28 @@ public class LocationMonitor : MonoBehaviour
                 Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
                 string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
-                using (UnityWebRequest www = UnityWebRequest.Post("http://10.178.193.68:3000/api/movement", json_body, "application/json"))
+                using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/movement", json_body, "application/json"))
                 {
                     yield return www.SendWebRequest();
 
                     if (www.result != UnityWebRequest.Result.Success)
                     {
                         Debug.LogError(www.error);
+                    }
+                    else
+                    {
+                        Traps traps = JsonUtility.FromJson<Traps>(www.downloadHandler.text);
+                        foreach (Trap trap in traps.traps)
+                        {
+                            Debug.Log("Trap: " + trap.id + " " + trap.latitude + " " + trap.longitude);
+
+                            // Instead of using AR raycast hit, spawn in front of player
+                            Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
+                            if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
+                            {
+                                m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up);
+                            }
+                        }
                     }
                 }
 
@@ -81,4 +109,50 @@ public class LocationMonitor : MonoBehaviour
         // Stops the location service if there is no need to query location updates continuously.
         // Input.location.Stop();
     }
+
+    // Add this method to calculate spawn position in front of player
+    private Vector3 GetGroundPositionInFrontOfPlayer()
+    {
+        Camera playerCamera = Camera.main;
+        if (playerCamera == null) return Vector3.zero;
+
+        // Get the forward direction from the camera
+        Vector3 forward = playerCamera.transform.forward;
+
+        // Project forward direction onto the horizontal plane (ignore Y component)
+        forward.y = 0;
+        forward.Normalize();
+
+        // Set spawn distance (how far in front of player)
+        float spawnDistance = 2.0f; // Adjust this value as needed
+
+        // Calculate the target position in front of player
+        Vector3 targetPosition = playerCamera.transform.position + (forward * spawnDistance);
+
+        // Raycast downward from above the target position to find ground
+        Vector3 rayStart = targetPosition + Vector3.up * 10f; // Start 10 units above
+        RaycastHit hit;
+
+        if (Physics.Raycast(rayStart, Vector3.down, out hit, 20f, LayerMask.GetMask("Default")))
+        {
+            return hit.point;
+        }
+
+        // Fallback: if no ground found, use the target position at ground level
+        return new Vector3(targetPosition.x, 0, targetPosition.z);
+    }
+}
+
+[Serializable]
+public class Traps
+{
+    [SerializeField] public List<Trap> traps;
+}
+
+[Serializable]
+public class Trap
+{
+    [SerializeField] public string id;
+    [SerializeField] public float latitude;
+    [SerializeField] public float longitude;
 }

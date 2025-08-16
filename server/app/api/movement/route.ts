@@ -30,11 +30,11 @@ export async function POST(request: NextRequest) {
     const range = 0.005;
     
     // Now filter with a more liberal range (1 mile = 1609.34 meters)
-    const result = await db`
+    const traps = await db`
         SELECT * FROM traps
         WHERE location <@> point(${movement.longitude}, ${movement.latitude}) <= ${range}
     `;
-    console.log("Traps within threshold: ", JSON.stringify(result));
+    console.log("Traps within threshold: ", JSON.stringify(traps));
 
-    return NextResponse.json({ message: "Movement received", result });
+    return NextResponse.json({ traps });
 }
