@@ -192,7 +192,7 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         /// Otherwise, it will spawn the prefab at the index.
         /// </remarks>
         /// <seealso cref="objectSpawned"/>
-        public bool TrySpawnObject(Vector3 spawnPoint, Vector3 spawnNormal, bool isThirdPartyTrap = false)
+        public bool TrySpawnObject(Vector3 spawnPoint, Vector3 spawnNormal)
         {
             if (m_OnlySpawnInView)
             {
@@ -209,11 +209,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             var objectIndex = isSpawnOptionRandomized ? Random.Range(0, m_ObjectPrefabs.Count) : m_SpawnOptionIndex;
             var newObject = Instantiate(m_ObjectPrefabs[objectIndex]);
             
-            // If this is a mine (S-Mine prefab), trigger the trap placement
-            if ((newObject.name.Contains("Mine") || newObject.name.Contains("mine")) && !isThirdPartyTrap)
-            {
-                StartCoroutine(PlaceTrap());
-            }
             if (m_SpawnAsChildren)
                 newObject.transform.parent = transform;
 
@@ -240,23 +235,6 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
 
             objectSpawned?.Invoke(newObject);
             return true;
-        }
-
-        private IEnumerator PlaceTrap()
-        {
-            // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
-            Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
-
-            string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
-            using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/place-trap", json_body, "application/json"))
-            {
-                yield return www.SendWebRequest();
-
-                if (www.result != UnityWebRequest.Result.Success)
-                {
-                    Debug.LogError(www.error);
-                }
-            } 
         }
     }
 }

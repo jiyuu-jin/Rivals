@@ -13,6 +13,8 @@ public class LocationMonitor : MonoBehaviour
 
     ObjectSpawner m_ObjectSpawner;
 
+    Dictionary<int, GameObject> spawnedTrapObjects = new Dictionary<int, GameObject>();
+
     void Start()
     {
         coroutine = Routine();
@@ -24,7 +26,9 @@ public class LocationMonitor : MonoBehaviour
 #else
             m_ObjectSpawner = FindObjectOfType<ObjectSpawner>();
 #endif
-
+            
+        // Find any existing trap objects in the scene and register them
+        RefreshSpawnedTrapObjects();
     }
 
     IEnumerator Routine()
@@ -71,7 +75,6 @@ public class LocationMonitor : MonoBehaviour
         }
         else
         {
-            List<int> knownTraps = new List<int>();
             while (true)
             {
                 // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
@@ -91,16 +94,35 @@ public class LocationMonitor : MonoBehaviour
                         Traps traps = JsonUtility.FromJson<Traps>(www.downloadHandler.text);
                         foreach (Trap trap in traps.traps)
                         {
-                            if (!knownTraps.Contains(trap.id)) {
-                                knownTraps.Add(trap.id);
-                                Debug.Log("New Trap: " + trap.id + " " + trap.latitude + " " + trap.longitude);
+                            // Check if we already have this trap object spawned
+                            if (!spawnedTrapObjects.ContainsKey(trap.id))
+                            {
+                                Debug.Log($"TRAP DEBUG: Spawning trap from server: {trap.id} at ({trap.latitude}, {trap.longitude})");
 
                                 // Instead of using AR raycast hit, spawn in front of player
                                 Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
                                 if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
                                 {
-                                    m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up, true);
+                                    Debug.Log($"TRAP DEBUG: Attempting to spawn trap {trap.id} at position {spawnPosition}");
+                                    if (m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up))
+                                    {
+                                        Debug.Log($"TRAP DEBUG: Successfully spawned object for trap {trap.id}, starting initialization");
+                                        // Find and initialize the spawned object immediately
+                                        InitializeDiscoveredTrapImmediate(trap.id, spawnPosition);
+                                    }
+                                    else
+                                    {
+                                        Debug.LogWarning($"TRAP DEBUG: Failed to spawn object for trap {trap.id}");
+                                    }
                                 }
+                                else
+                                {
+                                    Debug.LogWarning($"TRAP DEBUG: Could not find valid ground position for trap {trap.id}");
+                                }
+                            }
+                            else
+                            {
+                                Debug.Log($"TRAP DEBUG: Skipping trap {trap.id} - already spawned");
                             }
                         }
                     }
@@ -145,6 +167,165 @@ public class LocationMonitor : MonoBehaviour
         // Fallback: if no ground found, use the target position at ground level
         return new Vector3(targetPosition.x, 0, targetPosition.z);
     }
+
+    public IEnumerator PlaceTrap(System.Action<int> onTrapPlaced = null)
+    {
+        // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
+        Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
+
+        string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
+        using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/place-trap", json_body, "application/json"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError(www.error);
+                onTrapPlaced?.Invoke(-1); // Signal failure
+            }
+            else
+            {
+                PlaceTrapResponse response = JsonUtility.FromJson<PlaceTrapResponse>(www.downloadHandler.text);
+                if (response != null && response.trap != null)
+                {
+                    Debug.Log("Trap placed: " + response.trap.id + " at " + response.trap.location);
+                    onTrapPlaced?.Invoke(response.trap.id); // Return the trap ID
+                }
+                else
+                {
+                    Debug.LogError("Failed to parse trap placement response");
+                    onTrapPlaced?.Invoke(-1); // Signal failure
+                }
+            }
+        }
+    }
+    
+    void InitializeDiscoveredTrapImmediate(int trapId, Vector3 spawnPosition)
+    {
+        StartCoroutine(InitializeDiscoveredTrapDelayed(trapId, spawnPosition));
+    }
+    
+    IEnumerator InitializeDiscoveredTrapDelayed(int trapId, Vector3 spawnPosition)
+    {
+        // Wait a frame to ensure object is fully spawned and positioned
+        yield return null;
+        yield return null; // Wait an extra frame to be sure
+        
+        Debug.Log($"TRAP DEBUG: Starting search for trap {trapId} - looking for uninitialized TrapTrigger components");
+        
+        // Find ALL TrapTrigger components in the scene
+        TrapTrigger[] allTrapTriggers = FindObjectsByType<TrapTrigger>(FindObjectsSortMode.None);
+        Debug.Log($"TRAP DEBUG: Found {allTrapTriggers.Length} total TrapTrigger components in scene");
+        
+        GameObject foundTrapObject = null;
+        
+        for (int i = 0; i < allTrapTriggers.Length; i++)
+        {
+            TrapTrigger trapTrigger = allTrapTriggers[i];
+            TrapIdentifier existingId = trapTrigger.GetComponent<TrapIdentifier>();
+            
+            Debug.Log($"TRAP DEBUG: TrapTrigger {i}: {trapTrigger.name}, HasTrapId={existingId != null}, ValidId={existingId?.HasValidId()}, enabled={trapTrigger.enabled}");
+            
+            // Look for TrapTrigger that doesn't have a valid ID yet (newly spawned)
+            if (existingId == null || !existingId.HasValidId())
+            {
+                Debug.Log($"TRAP DEBUG: Found uninitialized TrapTrigger on {trapTrigger.name}, initializing for trap {trapId}");
+                
+                // This looks like a newly spawned trap object that needs initialization
+                foundTrapObject = trapTrigger.gameObject;
+                
+                // Disable the TrapTrigger component IMMEDIATELY to prevent any server calls
+                trapTrigger.enabled = false;
+                Debug.Log($"TRAP DEBUG: Disabled TrapTrigger for discovered trap {trapId} on object {trapTrigger.name}");
+                
+                // Get or add TrapIdentifier
+                TrapIdentifier trapIdentifier = existingId;
+                if (trapIdentifier == null)
+                {
+                    trapIdentifier = trapTrigger.gameObject.AddComponent<TrapIdentifier>();
+                    Debug.Log($"TRAP DEBUG: Added TrapIdentifier component to {trapTrigger.name}");
+                }
+                
+                // Initialize this as a discovered trap (not player-placed)
+                trapIdentifier.Initialize(trapId, false);
+                spawnedTrapObjects[trapId] = trapTrigger.gameObject;
+                Debug.Log($"TRAP DEBUG: Successfully initialized discovered trap object with ID: {trapId} on {trapTrigger.name}");
+                break;
+            }
+            else
+            {
+                Debug.Log($"TRAP DEBUG: Skipping {trapTrigger.name} - already has valid ID {existingId.TrapId}");
+            }
+        }
+        
+        if (foundTrapObject == null)
+        {
+            Debug.LogWarning($"TRAP DEBUG: Could not find uninitialized TrapTrigger to initialize for trap ID {trapId} - searched {allTrapTriggers.Length} TrapTrigger components");
+        }
+    }
+    
+    IEnumerator InitializeDiscoveredTrap(int trapId, Vector3 spawnPosition)
+    {
+        // Wait a frame for the object to be fully spawned
+        yield return null;
+        
+        // Find the newly spawned object near the spawn position
+        Collider[] nearbyObjects = Physics.OverlapSphere(spawnPosition, 1f);
+        foreach (Collider col in nearbyObjects)
+        {
+            // Check if this object has a TrapTrigger
+            TrapTrigger trapTrigger = col.GetComponent<TrapTrigger>();
+            if (trapTrigger != null)
+            {
+                // Mark this as a discovered trap to prevent server placement
+                trapTrigger.MarkAsDiscoveredTrap();
+                Debug.Log("Marked TrapTrigger as discovered trap to prevent duplication");
+            }
+            
+            // Get or add TrapIdentifier
+            TrapIdentifier trapIdentifier = col.GetComponent<TrapIdentifier>();
+            if (trapIdentifier == null)
+            {
+                trapIdentifier = col.gameObject.AddComponent<TrapIdentifier>();
+            }
+            
+            if (!trapIdentifier.HasValidId())
+            {
+                // Initialize this as a discovered trap (not player-placed)
+                trapIdentifier.Initialize(trapId, false);
+                spawnedTrapObjects[trapId] = col.gameObject;
+                Debug.Log($"Initialized discovered trap object with ID: {trapId}");
+                break;
+            }
+        }
+    }
+    
+    public void RegisterPlayerTrap(int trapId, GameObject trapObject)
+    {
+        if (trapId > 0 && trapObject != null)
+        {
+            spawnedTrapObjects[trapId] = trapObject;
+            Debug.Log($"Registered player trap with ID: {trapId}");
+        }
+    }
+    
+    void RefreshSpawnedTrapObjects()
+    {
+        // Find all existing trap objects in the scene and register them
+        spawnedTrapObjects.Clear();
+        
+        TrapIdentifier[] existingTraps = FindObjectsByType<TrapIdentifier>(FindObjectsSortMode.None);
+        foreach (TrapIdentifier trapId in existingTraps)
+        {
+            if (trapId.HasValidId())
+            {
+                spawnedTrapObjects[trapId.TrapId] = trapId.gameObject;
+                Debug.Log($"Found existing trap in scene: ID={trapId.TrapId}");
+            }
+        }
+        
+        Debug.Log($"Refreshed trap objects: {spawnedTrapObjects.Count} traps registered");
+    }
 }
 
 [Serializable]
@@ -159,4 +340,18 @@ public class Trap
     [SerializeField] public int id;
     [SerializeField] public float latitude;
     [SerializeField] public float longitude;
+}
+
+[Serializable]
+public class PlaceTrapResponse
+{
+    [SerializeField] public string message;
+    [SerializeField] public TrapData trap;
+}
+
+[Serializable]
+public class TrapData
+{
+    [SerializeField] public int id;
+    [SerializeField] public string location;
 }

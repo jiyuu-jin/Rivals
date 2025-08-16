@@ -236,6 +236,7 @@ GameObject:
   - component: {fileID: -4597330908175027283}
   - component: {fileID: -4966109348440000493}
   - component: {fileID: -3681523873396051497}
+  - component: {fileID: -3263913707753525765}
   m_Layer: 0
   m_Name: S-Mine
   m_TagString: Untagged
@@ -437,3 +438,15 @@ MonoBehaviour:
   m_Elasticity: 0.15
   m_EnableElasticBreakLimit: 0
   m_ElasticBreakLimit: 0.5
+--- !u!114 &-3263913707753525765
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646946700311360}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2366b885eed8a4bfbac33a5a97e338c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrapTrigger
