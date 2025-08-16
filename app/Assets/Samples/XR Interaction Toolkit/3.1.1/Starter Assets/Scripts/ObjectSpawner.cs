@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.XR.Interaction.Toolkit.Utilities;
+using UnityEngine.Networking;
 
 namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
 {
@@ -205,6 +207,10 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             }
 
             var objectIndex = isSpawnOptionRandomized ? Random.Range(0, m_ObjectPrefabs.Count) : m_SpawnOptionIndex;
+            if (objectIndex == 7)
+            {
+                StartCoroutine(PlaceTrap());
+            }
             var newObject = Instantiate(m_ObjectPrefabs[objectIndex]);
             if (m_SpawnAsChildren)
                 newObject.transform.parent = transform;
@@ -232,6 +238,19 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
 
             objectSpawned?.Invoke(newObject);
             return true;
+        }
+
+        private IEnumerator PlaceTrap()
+        {
+            using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/place-trap", "{ \"owner_username\": \"player1\", \"field2\": 2 }", "application/json"))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError(www.error);
+                }
+            }
         }
     }
 }
