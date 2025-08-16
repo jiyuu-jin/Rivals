@@ -27,6 +27,11 @@ export async function POST(request: NextRequest) {
       WHERE u.username = ${owner_username}
       RETURNING id, location
     `;
+    if (result.length === 0) {
+      return NextResponse.json({ 
+        error: "User not found" 
+      }, { status: 404 });
+    }
 
     return NextResponse.json({ 
       message: "Trap created successfully", 

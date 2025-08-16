@@ -6,6 +6,8 @@ CREATE TABLE users (
   username VARCHAR(255) NOT NULL
 );
 
+INSERT INTO users (username) VALUES ('player1'), ('player2');
+
 CREATE TABLE traps (
   id SERIAL PRIMARY KEY,
   owner SERIAL NOT NULL REFERENCES users(id),
