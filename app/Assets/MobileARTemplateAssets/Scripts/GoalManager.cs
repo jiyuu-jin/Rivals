@@ -157,6 +157,19 @@ public class GoalManager : MonoBehaviour
         get => m_CreateButton;
         set => m_CreateButton = value;
     }
+    
+    [Tooltip("The Floor Button to enable once the greeting prompt is dismissed.")]
+    [SerializeField]
+    GameObject m_FloorButton;
+
+    /// <summary>
+    /// The Floor Button to enable once the greeting prompt is dismissed.
+    /// </summary>
+    public GameObject floorButton
+    {
+        get => m_FloorButton;
+        set => m_FloorButton = value;
+    }
 
     [Tooltip("The AR Template Menu Manager object to enable once the greeting prompt is dismissed.")]
     [SerializeField]
@@ -307,6 +320,9 @@ public class GoalManager : MonoBehaviour
         m_GreetingPrompt.SetActive(false);
         m_OptionsButton.SetActive(true);
         m_CreateButton.SetActive(true);
+        // Floor button disabled - floor height is now automatically set from mine placement
+        if (m_FloorButton != null)
+            m_FloorButton.SetActive(false);
         m_MenuManager.enabled = true;
 
         for (int i = startingStep; i < m_StepList.Count; i++)
