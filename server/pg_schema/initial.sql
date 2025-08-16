@@ -1,0 +1,12 @@
+CREATE EXTENSION earthdistance;
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE traps (
+  id SERIAL PRIMARY KEY,
+  owner SERIAL NOT NULL REFERENCES users(id),
+  location POINT NOT NULL
+);
