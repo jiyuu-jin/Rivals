@@ -7,6 +7,7 @@ public class ZombieHealth : MonoBehaviour
     public int maxHealth = 100;
     
     [Tooltip("Current health points")]
+    [HideInInspector] // Hide from inspector to avoid manual setting
     public int currentHealth;
     
     [Tooltip("Optional death effect prefab")]
@@ -30,15 +31,22 @@ public class ZombieHealth : MonoBehaviour
     [Tooltip("Duration of hit flash in seconds")]
     public float hitFlashDuration = 0.2f;
     
+    [HideInInspector]
     private bool isDead = false;
     private Renderer[] renderers;
     private AudioSource audioSource;
     private Color[] originalColors;
+    private Animator animator;
     
     void Start()
     {
+        // Reset dead status - important to ensure zombie is alive when spawned
+        isDead = false;
+        
         // Initialize health
         currentHealth = maxHealth;
+        
+        Debug.Log($"ZombieHealth: Initialized with {currentHealth}/{maxHealth} health");
         
         // Get renderers for visual effects
         renderers = GetComponentsInChildren<Renderer>();
@@ -46,7 +54,7 @@ public class ZombieHealth : MonoBehaviour
         
         for (int i = 0; i < renderers.Length; i++)
         {
-            if (renderers[i].material.HasProperty("_Color"))
+            if (renderers[i] != null && renderers[i].material != null && renderers[i].material.HasProperty("_Color"))
             {
                 originalColors[i] = renderers[i].material.color;
             }
@@ -57,6 +65,13 @@ public class ZombieHealth : MonoBehaviour
         if (audioSource == null && (hitSound != null || deathSound != null))
         {
             audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        
+        // Get animator for animation control
+        animator = GetComponent<Animator>();
+        if (animator == null)
+        {
+            Debug.LogWarning($"ZombieHealth: No Animator found on {gameObject.name}. Animations will not play.");
         }
         
         // Add the Zombie tag if not already tagged
@@ -70,7 +85,19 @@ public class ZombieHealth : MonoBehaviour
     {
         if (isDead) return;
         
+        Debug.Log($"=== ZombieHealth: TakeDamage called on {gameObject.name} ===");
+        Debug.Log($"ZombieHealth: Taking {damage} damage. Current health before: {currentHealth}/{maxHealth}");
+        
         currentHealth -= damage;
+        
+        Debug.Log($"ZombieHealth: Health after damage: {currentHealth}/{maxHealth}");
+        
+        // Trigger hit animation
+        if (animator != null)
+        {
+            animator.SetBool("IsHit", true);
+            StartCoroutine(ResetHitTrigger());
+        }
         
         // Visual feedback
         StartCoroutine(FlashOnHit());
@@ -99,6 +126,15 @@ public class ZombieHealth : MonoBehaviour
         if (isDead) return;
         
         isDead = true;
+        
+        // Trigger death animation
+        if (animator != null)
+        {
+            animator.SetBool("IsDead", true);
+            // Also stop other animations
+            animator.SetBool("IsHit", false);
+            animator.SetFloat("Speed", 0f);
+        }
         
         // Play death sound
         if (audioSource != null && deathSound != null)
@@ -179,5 +215,14 @@ public class ZombieHealth : MonoBehaviour
         
         // Destroy the zombie
         Destroy(gameObject);
+    }
+    
+    IEnumerator ResetHitTrigger()
+    {
+        yield return new WaitForSeconds(0.1f);
+        if (animator != null)
+        {
+            animator.SetBool("IsHit", false);
+        }
     }
 }

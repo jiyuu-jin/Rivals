@@ -174,7 +174,11 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.ARStarterAssets
                     if (m_RequireHorizontalUpSurface && arPlane.alignment != PlaneAlignment.HorizontalUp)
                         return;
 
-                    m_ObjectSpawner.TrySpawnObject(arRaycastHit.pose.position, arPlane.normal);
+                    // Only spawn if the ObjectSpawner is enabled (respects our mine placement logic)
+                    if (m_ObjectSpawner != null && m_ObjectSpawner.enabled)
+                    {
+                        m_ObjectSpawner.TrySpawnObject(arRaycastHit.pose.position, arPlane.normal);
+                    }
                 }
 
                 return;

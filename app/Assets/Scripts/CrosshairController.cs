@@ -30,6 +30,31 @@ public class CrosshairController : MonoBehaviour
         Debug.Log("CrosshairController: Crosshair created");
     }
     
+    void Update()
+    {
+        // Check if we're in mine placement mode and update crosshair color
+        UpdateCrosshairMode();
+    }
+    
+    void UpdateCrosshairMode()
+    {
+        if (crosshairImage == null) return;
+        
+        // Check if ObjectSpawner is enabled (mine placement mode)
+        var objectSpawner = FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets.ObjectSpawner>();
+        
+        if (objectSpawner != null && objectSpawner.enabled)
+        {
+            // Mine placement mode - change to orange/yellow
+            crosshairImage.color = Color.yellow;
+        }
+        else
+        {
+            // Shooting mode - use the original color
+            crosshairImage.color = crosshairColor;
+        }
+    }
+    
     void CreateCrosshair()
     {
         // First check if we already have a canvas in the scene

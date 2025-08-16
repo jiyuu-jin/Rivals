@@ -61,11 +61,16 @@ public class ZombieSpawner : MonoBehaviour
     
     void Start()
     {
-        // Hide the zombie prefab until a mine is placed
+        // Check if zombie prefab is assigned
         if (zombiePrefab != null)
         {
+            Debug.Log($"ZombieSpawner: Zombie prefab assigned: {zombiePrefab.name}");
             zombiePrefab.SetActive(false);
-            Debug.Log("ZombieSpawner: Hiding the zombie prefab until mine placement");
+            Debug.Log("ZombieSpawner: Hiding the zombie prefab until spawning is enabled");
+        }
+        else
+        {
+            Debug.LogError("ZombieSpawner: No zombie prefab assigned! Please assign a prefab in the inspector.");
         }
         
         StartCoroutine(InitializeSystem());
@@ -157,6 +162,8 @@ public class ZombieSpawner : MonoBehaviour
     
     void AddRequiredCameraComponents()
     {
+        Debug.Log($"ZombieSpawner: AddRequiredCameraComponents called. Camera: {(arCamera != null ? arCamera.name : "NULL")}");
+        
         if (arCamera != null)
         {
             // Add CrosshairController if it doesn't exist
@@ -164,6 +171,10 @@ public class ZombieSpawner : MonoBehaviour
             {
                 arCamera.gameObject.AddComponent<CrosshairController>();
                 Debug.Log("ZombieSpawner: Added CrosshairController to Main Camera");
+            }
+            else
+            {
+                Debug.Log("ZombieSpawner: CrosshairController already exists on Main Camera");
             }
             
             // Add ZombieShooter if it doesn't exist
@@ -175,6 +186,14 @@ public class ZombieSpawner : MonoBehaviour
                 // Connect the ZombieShooter to the ZombieHealth components
                 shooter.damage = 25; // Set a reasonable damage value
             }
+            else
+            {
+                Debug.Log("ZombieSpawner: ZombieShooter already exists on Main Camera");
+            }
+        }
+        else
+        {
+            Debug.LogError("ZombieSpawner: arCamera is null! Cannot add components.");
         }
     }
     
@@ -218,6 +237,38 @@ public class ZombieSpawner : MonoBehaviour
                         ProcessNewPlane(plane);
                     }
                 }
+            }
+        }
+    }
+    
+    void Update()
+    {
+        // Continuously check if we need to spawn more zombies
+        if (spawningEnabled && systemReady && hasFoundFloor)
+        {
+            // Clean up destroyed zombies and check if we need more
+            CleanupDestroyedZombies();
+            
+            // If we're below max zombies and cooldown has passed, try to spawn
+            if (spawnedZombies.Count < maxZombies && Time.time - lastSpawnTime >= spawnCooldown)
+            {
+                TrySpawnZombieOnAnyValidPlane();
+            }
+        }
+    }
+    
+    void TrySpawnZombieOnAnyValidPlane()
+    {
+        if (planeManager == null) return;
+        
+        // Find any valid horizontal plane to spawn on
+        foreach (var plane in planeManager.trackables)
+        {
+            if (IsFloorPlane(plane))
+            {
+                Debug.Log("ZombieSpawner: Found valid plane for respawning, attempting spawn...");
+                TrySpawnZombie(plane);
+                break; // Only spawn one zombie per attempt
             }
         }
     }
@@ -275,11 +326,8 @@ public class ZombieSpawner : MonoBehaviour
             return false;
         }
         
-        // Check spawn cooldown
-        if (Time.time - lastSpawnTime < spawnCooldown)
-            return false;
-            
-        // Check random chance
+        // For initial spawning (new plane detected), check random chance
+        // For respawning (Update method), we skip random chance
         if (Random.value > spawnChance)
             return false;
             
@@ -361,13 +409,31 @@ public class ZombieSpawner : MonoBehaviour
             return;
         }
         
+        // Don't spawn if we're at max capacity
+        CleanupDestroyedZombies();
+        if (spawnedZombies.Count >= maxZombies)
+        {
+            Debug.Log($"ZombieSpawner: Cannot spawn - at max capacity ({spawnedZombies.Count}/{maxZombies})");
+            return;
+        }
+        
         Debug.Log($"ZombieSpawner: Attempting to spawn zombie using lowest floor height: {lowestFloorHeight:F3}m");
+        
+        // Check if zombie prefab is available
+        if (zombiePrefab == null)
+        {
+            Debug.LogError("ZombieSpawner: Cannot spawn zombie - zombiePrefab is null!");
+            return;
+        }
         
         // Get the XZ position only, we'll set Y separately
         Vector3 spawnPosition = GetSpawnPosition(plane);
         
         if (spawnPosition == Vector3.zero)
+        {
+            Debug.Log("ZombieSpawner: Failed to find valid spawn position");
             return; // Failed to find valid position
+        }
         
         // Final validation - ensure spawn position is reasonable
         if (!IsSpawnPositionValid(spawnPosition, plane))
@@ -380,14 +446,48 @@ public class ZombieSpawner : MonoBehaviour
         Vector3 finalPosition = spawnPosition;
         finalPosition.y = lowestFloorHeight; // Use lowest floor height detected
         
-        // Now instantiate the zombie at the position
+        Debug.Log($"ZombieSpawner: About to instantiate zombie at position {finalPosition}");
+        
+        try
+        {
+                    // Now instantiate the zombie at the position
         GameObject zombie = Instantiate(zombiePrefab, finalPosition, GetSpawnRotation(plane));
         
-        Debug.Log($"ZombieSpawner: Positioned zombie at Y={finalPosition.y:F3}m (floor height)");
+        // Ensure the ZombieHealth component is properly initialized
+        ZombieHealth health = zombie.GetComponent<ZombieHealth>();
+        if (health != null)
+        {
+            // Initialize health manually without disabling/enabling (which would reset it)
+            if (health.currentHealth <= 0)
+            {
+                health.currentHealth = health.maxHealth;
+                Debug.Log("ZombieSpawner: Manually initialized zombie health to avoid reset bug");
+            }
+        }
+        
+        // Add animation components if they don't exist
+        AddAnimationComponents(zombie);
+            
+            if (zombie != null)
+            {
+                Debug.Log($"ZombieSpawner: Successfully spawned zombie at Y={finalPosition.y:F3}m (floor height)");
+                
+                // Make sure it's active
+                zombie.SetActive(true);
         
         // Track spawned zombie
         spawnedZombies.Add(zombie);
         lastSpawnTime = Time.time;
+            }
+            else
+            {
+                Debug.LogError("ZombieSpawner: Failed to instantiate zombie - returned null");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"ZombieSpawner: Error spawning zombie: {e.Message}\n{e.StackTrace}");
+        }
     }
     
     Vector3 GetSpawnPosition(ARPlane plane)
@@ -528,8 +628,20 @@ public class ZombieSpawner : MonoBehaviour
     
     void CleanupDestroyedZombies()
     {
+        // Count how many zombies were destroyed
+        int beforeCount = spawnedZombies.Count;
+        
         // Remove null references from our list
         spawnedZombies.RemoveAll(zombie => zombie == null);
+        
+        int afterCount = spawnedZombies.Count;
+        int destroyedCount = beforeCount - afterCount;
+        
+        if (destroyedCount > 0)
+        {
+            Debug.Log($"ZombieSpawner: {destroyedCount} zombies were destroyed. Current count: {afterCount}/{maxZombies}");
+            // Note: Respawning is now handled by the Update() method
+        }
     }
     
     void CleanupAllZombies()
@@ -630,22 +742,25 @@ public class ZombieSpawner : MonoBehaviour
     /// </summary>
     public void EnableZombieSpawning()
     {
+        Debug.Log("ZombieSpawner: EnableZombieSpawning called");
+        
         // Check if we have detected a floor plane first
         if (!hasFoundFloor)
         {
-            Debug.LogWarning("ZombieSpawner: Cannot enable spawning - No floor detected yet. Please scan more of your environment.");
+            Debug.LogWarning("ZombieSpawner: No floor detected yet. Trying to find AR planes...");
             
             // Try to automatically find a floor plane
             SetFloorHeightFromARPlanes();
             
-            // If we still don't have a floor, don't enable spawning
+            // If we still don't have a floor, set a default floor height
             if (!hasFoundFloor)
             {
-                return;
+                Debug.LogWarning("ZombieSpawner: No AR planes detected. Setting default floor height.");
+                SetDefaultFloorHeight();
             }
         }
         
-        // We have a valid floor, enable spawning
+        // We should have a valid floor now, enable spawning
         spawningEnabled = true;
         
         // Position the original zombie prefab at the floor height
@@ -654,11 +769,128 @@ public class ZombieSpawner : MonoBehaviour
             Vector3 zombiePosition = zombiePrefab.transform.position;
             zombiePosition.y = lowestFloorHeight;
             zombiePrefab.transform.position = zombiePosition;
+            
+            // Initialize the ZombieHealth component without resetting it
+            ZombieHealth health = zombiePrefab.GetComponent<ZombieHealth>();
+            if (health != null)
+            {
+                // Only initialize if health is 0 or uninitialized
+                if (health.currentHealth <= 0)
+                {
+                    health.currentHealth = health.maxHealth;
+                    Debug.Log("ZombieSpawner: Manually initialized original zombie health");
+                }
+            }
+            
+            // Add animation components to the original prefab too
+            AddAnimationComponents(zombiePrefab);
+            
             zombiePrefab.SetActive(true);
             Debug.Log($"ZombieSpawner: Showing and positioning original zombie prefab at Y={zombiePosition.y:F3}m");
         }
+        else if (zombiePrefab == null)
+        {
+            Debug.LogError("ZombieSpawner: Cannot show zombie prefab - it is null!");
+        }
         
-        Debug.Log("ZombieSpawner: Floor detected at Y=" + lowestFloorHeight + "m. Zombie spawning ENABLED!");
+        Debug.Log("ZombieSpawner: Floor height set to Y=" + lowestFloorHeight + "m. Zombie spawning ENABLED!");
+        
+        // Force spawn a zombie for testing
+        ForceSpawnZombie();
+    }
+    
+    /// <summary>
+    /// Sets a default floor height when AR plane detection fails
+    /// </summary>
+    private void SetDefaultFloorHeight()
+    {
+        if (arCamera != null)
+        {
+            // Set floor height to camera height minus 1.5 meters (approx average human height)
+            lowestFloorHeight = arCamera.transform.position.y - 1.5f;
+            hasFoundFloor = true;
+            Debug.Log($"ZombieSpawner: Default floor height set to {lowestFloorHeight:F3}m (camera height - 1.5m)");
+        }
+        else
+        {
+            // Absolute fallback
+            lowestFloorHeight = -1.5f;
+            hasFoundFloor = true;
+            Debug.Log($"ZombieSpawner: Default floor height set to {lowestFloorHeight:F3}m (absolute fallback)");
+        }
+    }
+    
+    /// <summary>
+    /// Forces a zombie to spawn for testing purposes
+    /// </summary>
+    private void ForceSpawnZombie()
+    {
+        if (zombiePrefab == null)
+        {
+            Debug.LogError("ZombieSpawner: Cannot force spawn zombie - zombiePrefab is null!");
+            return;
+        }
+        
+        if (!hasFoundFloor)
+        {
+            Debug.LogError("ZombieSpawner: Cannot force spawn zombie - no floor height set!");
+            return;
+        }
+        
+        Debug.Log("ZombieSpawner: Forcing zombie spawn for testing...");
+        
+        // Create a position in front of the camera
+        Vector3 spawnPosition = arCamera.transform.position + arCamera.transform.forward * 2f;
+        spawnPosition.y = lowestFloorHeight; // Set to floor height
+        
+        try
+        {
+            // Instantiate the zombie
+            GameObject zombie = Instantiate(zombiePrefab, spawnPosition, Quaternion.LookRotation(-arCamera.transform.forward));
+            
+            if (zombie != null)
+            {
+                Debug.Log($"ZombieSpawner: Successfully forced spawn of zombie at {spawnPosition}");
+                zombie.SetActive(true);
+                spawnedZombies.Add(zombie);
+                lastSpawnTime = Time.time;
+            }
+            else
+            {
+                Debug.LogError("ZombieSpawner: Failed to force spawn zombie - returned null");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"ZombieSpawner: Error force spawning zombie: {e.Message}\n{e.StackTrace}");
+        }
+    }
+    
+    /// <summary>
+    /// Add required animation components to a zombie
+    /// </summary>
+    void AddAnimationComponents(GameObject zombie)
+    {
+        if (zombie == null) return;
+        
+        // Add Animator if it doesn't exist
+        Animator animator = zombie.GetComponent<Animator>();
+        if (animator == null)
+        {
+            animator = zombie.AddComponent<Animator>();
+            Debug.Log("ZombieSpawner: Added Animator component to zombie");
+        }
+        
+        // Add ZombieMovement if it doesn't exist
+        ZombieMovement movement = zombie.GetComponent<ZombieMovement>();
+        if (movement == null)
+        {
+            movement = zombie.AddComponent<ZombieMovement>();
+            Debug.Log("ZombieSpawner: Added ZombieMovement component to zombie");
+        }
+        
+        // Note: The Animator Controller should be assigned manually in the prefab
+        // or through the Unity Inspector for proper animation setup
     }
     
     /// <summary>
@@ -691,24 +923,24 @@ public class ZombieSpawner : MonoBehaviour
         GUILayout.Label("ZombieSpawner Debug:");
         
         if (hasFoundFloor)
-        {
-            GUILayout.Label($"Floor height: {lowestFloorHeight:F3}m {(floorHeightLocked ? "(LOCKED)" : "")}");
-            GUILayout.Label($"Height above floor: {arCamera.transform.position.y - lowestFloorHeight:F2}m");
-        }
+            {
+                GUILayout.Label($"Floor height: {lowestFloorHeight:F3}m {(floorHeightLocked ? "(LOCKED)" : "")}");
+                GUILayout.Label($"Height above floor: {arCamera.transform.position.y - lowestFloorHeight:F2}m");
+            }
         else
         {
             GUILayout.Label("No floor detected yet");
         }
         
         if (GUI.Button(new Rect(10, 100, 150, 40), "Set Floor Height"))
-        {
-            SetFloorHeightFromCurrentPosition();
+            {
+                SetFloorHeightFromCurrentPosition();
         }
         
         if (GUI.Button(new Rect(10, 150, 150, 40), "Reset Floor Lock"))
-        {
-            floorHeightLocked = false;
-            Debug.Log("ZombieSpawner: Floor height unlocked");
+            {
+                floorHeightLocked = false;
+                Debug.Log("ZombieSpawner: Floor height unlocked");
         }
         
         GUILayout.EndArea();

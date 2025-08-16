@@ -318,6 +318,27 @@ public class ARTemplateMenuManager : MonoBehaviour
             if (m_ObjectSpawner.objectPrefabs.Count > objectIndex)
             {
                 m_ObjectSpawner.spawnOptionIndex = objectIndex;
+                
+                // Check if this is a mine being selected
+                bool isMine = false;
+                if (objectIndex < m_ObjectSpawner.objectPrefabs.Count)
+                {
+                    string prefabName = m_ObjectSpawner.objectPrefabs[objectIndex].name;
+                    isMine = prefabName.Contains("Mine") || prefabName.Contains("mine") || prefabName.Contains("S-");
+                    Debug.Log($"ARTemplateMenuManager: Selected object '{prefabName}', is mine: {isMine}");
+                }
+                
+                // Enable ObjectSpawner only if this is a mine
+                if (isMine)
+                {
+                    m_ObjectSpawner.enabled = true;
+                    Debug.Log("ARTemplateMenuManager: Mine selected, enabling ObjectSpawner for mine placement");
+                }
+                else
+                {
+                    m_ObjectSpawner.enabled = false;
+                    Debug.Log("ARTemplateMenuManager: Non-mine object selected, keeping ObjectSpawner disabled");
+                }
             }
             else
             {
@@ -410,6 +431,13 @@ public class ARTemplateMenuManager : MonoBehaviour
         m_ObjectMenuAnimator.SetBool("Show", false);
         m_ShowObjectMenu = false;
         AdjustARDebugMenuPosition();
+        
+        // Disable ObjectSpawner when menu is hidden to return to shooting mode
+        if (m_ObjectSpawner != null)
+        {
+            m_ObjectSpawner.enabled = false;
+            Debug.Log("ARTemplateMenuManager: Menu hidden, disabling ObjectSpawner (returning to shooting mode)");
+        }
     }
 
     void ChangePlaneVisibility(bool setVisible)

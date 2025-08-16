@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets;
 using UnityEngine.InputSystem;
 
 public class ZombieShooter : MonoBehaviour
@@ -15,13 +16,16 @@ public class ZombieShooter : MonoBehaviour
     public LayerMask shootLayerMask = -1; // Default to everything
     
     [Tooltip("Damage per hit")]
-    public int damage = 10;
+    public int damage = 25;
     
     [Header("Visual Effects")]
+    [Tooltip("Bullet prefab to spawn and animate")]
+    public GameObject bulletPrefab;
+    
     [Tooltip("Optional muzzle flash effect")]
     public GameObject muzzleFlashPrefab;
     
-    [Tooltip("Optional hit effect")]
+    [Tooltip("Optional hit effect (will be used by bullet)")]
     public GameObject hitEffectPrefab;
     
     [Tooltip("Sound to play when shooting")]
@@ -64,16 +68,47 @@ public class ZombieShooter : MonoBehaviour
             canShoot = true;
         }
         
-        // Use InputSystem instead of legacy Input
-        if (canShoot && Pointer.current != null && 
-            Pointer.current.press.wasPressedThisFrame)
+        // Debug: Check for input - use new Input System
+        bool mouseInput = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+        bool touchInput = Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame;
+        
+        if (mouseInput || touchInput)
         {
-            Shoot();
+            Debug.Log($"ZombieShooter: Input detected! Mouse: {mouseInput}, Touch: {touchInput}, CanShoot: {canShoot}");
         }
+        
+        // Use legacy Input for better compatibility
+        if (canShoot && (mouseInput || touchInput))
+        {
+            // Check if ObjectSpawner is enabled (mine placement mode)
+            ObjectSpawner objectSpawner = FindFirstObjectByType<ObjectSpawner>();
+            
+            Debug.Log($"ZombieShooter: ObjectSpawner found: {objectSpawner != null}, Enabled: {(objectSpawner != null ? objectSpawner.enabled : false)}");
+            
+            // Only shoot if ObjectSpawner is disabled (not in mine placement mode)
+            if (objectSpawner == null || !objectSpawner.enabled)
+            {
+                Debug.Log("ZombieShooter: Attempting to shoot!");
+                Shoot();
+            }
+            else
+            {
+                Debug.Log("ZombieShooter: Not shooting because ObjectSpawner is active (mine placement mode)");
+            }
+        }
+    }
+    
+    // Check if pointer is over UI
+    bool IsPointerOverUI()
+    {
+        return UnityEngine.EventSystems.EventSystem.current != null && 
+               UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(-1);
     }
     
     void Shoot()
     {
+        Debug.Log("=== ZombieShooter: SHOOT METHOD CALLED ===");
+        
         // Mark that we've shot
         canShoot = false;
         lastShotTime = Time.time;
@@ -91,29 +126,119 @@ public class ZombieShooter : MonoBehaviour
             Destroy(flash, 0.1f); // Destroy after a short time
         }
         
-        // Perform the raycast from the center of the screen
-        RaycastHit hitInfo;
+        // Calculate shooting direction from the center of the screen
         Ray ray = arCamera.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
+        Vector3 shootDirection = ray.direction;
         
-        if (Physics.Raycast(ray, out hitInfo, maxShootDistance, shootLayerMask))
+        Debug.Log($"ZombieShooter: Shooting bullet from camera center");
+        Debug.Log($"ZombieShooter: Ray origin: {ray.origin}, direction: {shootDirection}");
+        
+        // Spawn bullet if we have a bullet prefab
+        if (bulletPrefab != null)
         {
+            // Spawn bullet slightly in front of camera to avoid clipping
+            Vector3 spawnPosition = ray.origin + shootDirection * 0.3f;
+            GameObject bullet = Instantiate(bulletPrefab, spawnPosition, Quaternion.LookRotation(shootDirection));
+            
+            // Initialize the bullet with shooting parameters
+            Bullet bulletScript = bullet.GetComponent<Bullet>();
+            if (bulletScript != null)
+            {
+                bulletScript.Initialize(shootDirection, damage, shootLayerMask, maxShootDistance);
+                
+                // Pass hit effect to bullet
+                if (hitEffectPrefab != null)
+                {
+                    bulletScript.hitEffectPrefab = hitEffectPrefab;
+                }
+                
+                Debug.Log($"ZombieShooter: Spawned bullet at {spawnPosition} with direction {shootDirection}");
+            }
+            else
+            {
+                Debug.LogError("ZombieShooter: Bullet prefab doesn't have Bullet script component!");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ZombieShooter: No bullet prefab assigned - falling back to instant raycast");
+            // Fallback to instant raycast if no bullet prefab
+            PerformInstantRaycast(ray);
+        }
+        
+        // ALWAYS show what zombies are in the scene for debugging
+        GameObject[] allZombies = GameObject.FindGameObjectsWithTag("Zombie");
+        Debug.Log($"ZombieShooter: Total zombies in scene with 'Zombie' tag: {allZombies.Length}");
+        foreach (var zombie in allZombies)
+        {
+            Collider zombieCollider = zombie.GetComponent<Collider>();
+            float distance = Vector3.Distance(ray.origin, zombie.transform.position);
+            Debug.Log($"  - {zombie.name}: Collider={zombieCollider != null}, Distance={distance:F2}m, Layer={zombie.layer}");
+        }
+        
+        // Also check for any object named "Parasite"
+        GameObject parasite = GameObject.Find("Parasite");
+        if (parasite != null)
+        {
+            Collider parasiteCollider = parasite.GetComponent<Collider>();
+            float distance = Vector3.Distance(ray.origin, parasite.transform.position);
+            Debug.Log($"ZombieShooter: Found Parasite object - Tag: {parasite.tag}, Collider: {parasiteCollider != null}, Distance: {distance:F2}m, Layer: {parasite.layer}");
+        }
+        else
+        {
+            Debug.Log("ZombieShooter: No object named 'Parasite' found in scene");
+        }
+        
+        Debug.Log("=== ZombieShooter: SHOOT METHOD COMPLETE ===");
+    }
+    
+    void PerformInstantRaycast(Ray ray)
+    {
+        Debug.Log("ZombieShooter: Performing fallback instant raycast");
+        
+        // Try multiple raycasts to find zombies, ignoring ARPlanes
+        RaycastHit[] allHits = Physics.RaycastAll(ray, maxShootDistance, shootLayerMask);
+        
+        // Sort hits by distance
+        System.Array.Sort(allHits, (hit1, hit2) => hit1.distance.CompareTo(hit2.distance));
+        
+        // Find the first hit that's not an ARPlane
+        RaycastHit hitInfo = new RaycastHit();
+        bool foundValidHit = false;
+        
+        foreach (var hit in allHits)
+        {
+            // Skip ARPlanes
+            if (hit.collider.name.Contains("ARPlane"))
+                continue;
+            
+            // Use this hit
+            hitInfo = hit;
+            foundValidHit = true;
+            break;
+        }
+        
+        if (foundValidHit)
+        {
+            Debug.Log($"ZombieShooter: Instant raycast hit {hitInfo.collider.name}");
+            
             // Check if we hit a zombie
-            // Assuming zombies have a tag or component to identify them
             if (hitInfo.collider.CompareTag("Zombie"))
             {
                 OnZombieHit(hitInfo);
             }
             else
             {
-                // Hit something else
-                Debug.Log($"Shot hit {hitInfo.collider.name} at distance {hitInfo.distance:F2}m");
-                
                 // Show hit effect if available
                 if (hitEffectPrefab != null)
                 {
                     Instantiate(hitEffectPrefab, hitInfo.point, Quaternion.LookRotation(hitInfo.normal));
                 }
             }
+        }
+        else
+        {
+            Debug.Log("ZombieShooter: Instant raycast missed");
         }
     }
     
@@ -125,14 +250,17 @@ public class ZombieShooter : MonoBehaviour
             Instantiate(hitEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));
         }
         
-        Debug.Log($"Hit zombie at {hit.point}, distance {hit.distance:F2}m");
+        Debug.Log($"=== ZombieShooter: OnZombieHit called ===");
+        Debug.Log($"Hit zombie '{hit.collider.name}' at {hit.point}, distance {hit.distance:F2}m");
+        Debug.Log($"ZombieShooter damage setting: {damage}");
         
         // Apply damage to the zombie's health component
         ZombieHealth health = hit.collider.GetComponentInParent<ZombieHealth>();
         if (health != null)
         {
+            Debug.Log($"Found ZombieHealth! Before damage: {health.currentHealth}/{health.maxHealth}");
             health.TakeDamage(damage);
-            Debug.Log($"Applied {damage} damage to zombie. Remaining health: {health.currentHealth}");
+            Debug.Log($"Applied {damage} damage to zombie. After damage: {health.currentHealth}/{health.maxHealth}");
         }
         else
         {

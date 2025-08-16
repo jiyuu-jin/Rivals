@@ -160,6 +160,10 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         void Awake()
         {
             EnsureFacingCamera();
+            
+            // Disable by default - only enable when mines are selected from menu
+            enabled = false;
+            Debug.Log("ObjectSpawner: Disabled by default. Enable when mines are selected from create menu.");
         }
 
         void EnsureFacingCamera()
