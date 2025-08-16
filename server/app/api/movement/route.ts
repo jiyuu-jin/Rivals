@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     `;
     console.log("All traps with distances: ", JSON.stringify(allTraps, null, 2));
 
-    const range = 0.005;
+    const range = 0.004;
     
     // Now filter with a more liberal range (1 mile = 1609.34 meters)
     const traps = await db`
