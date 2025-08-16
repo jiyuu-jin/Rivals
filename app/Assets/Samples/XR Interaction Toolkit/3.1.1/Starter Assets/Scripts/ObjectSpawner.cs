@@ -192,7 +192,7 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
         /// Otherwise, it will spawn the prefab at the index.
         /// </remarks>
         /// <seealso cref="objectSpawned"/>
-        public bool TrySpawnObject(Vector3 spawnPoint, Vector3 spawnNormal)
+        public bool TrySpawnObject(Vector3 spawnPoint, Vector3 spawnNormal, bool isThirdPartyTrap = false)
         {
             if (m_OnlySpawnInView)
             {
@@ -210,7 +210,7 @@ namespace UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets
             var newObject = Instantiate(m_ObjectPrefabs[objectIndex]);
             
             // If this is a mine (S-Mine prefab), trigger the trap placement
-            if (newObject.name.Contains("Mine") || newObject.name.Contains("mine"))
+            if ((newObject.name.Contains("Mine") || newObject.name.Contains("mine")) && !isThirdPartyTrap)
             {
                 StartCoroutine(PlaceTrap());
             }

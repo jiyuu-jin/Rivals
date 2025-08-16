@@ -71,6 +71,7 @@ public class LocationMonitor : MonoBehaviour
         }
         else
         {
+            List<int> knownTraps = new List<int>();
             while (true)
             {
                 // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
@@ -90,13 +91,16 @@ public class LocationMonitor : MonoBehaviour
                         Traps traps = JsonUtility.FromJson<Traps>(www.downloadHandler.text);
                         foreach (Trap trap in traps.traps)
                         {
-                            Debug.Log("Trap: " + trap.id + " " + trap.latitude + " " + trap.longitude);
+                            if (!knownTraps.Contains(trap.id)) {
+                                knownTraps.Add(trap.id);
+                                Debug.Log("New Trap: " + trap.id + " " + trap.latitude + " " + trap.longitude);
 
-                            // Instead of using AR raycast hit, spawn in front of player
-                            Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
-                            if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
-                            {
-                                m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up);
+                                // Instead of using AR raycast hit, spawn in front of player
+                                Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
+                                if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
+                                {
+                                    m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up, true);
+                                }
                             }
                         }
                     }
@@ -152,7 +156,7 @@ public class Traps
 [Serializable]
 public class Trap
 {
-    [SerializeField] public string id;
+    [SerializeField] public int id;
     [SerializeField] public float latitude;
     [SerializeField] public float longitude;
 }
