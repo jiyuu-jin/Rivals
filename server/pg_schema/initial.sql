@@ -1,3 +1,4 @@
+CREATE EXTENSION cube;
 CREATE EXTENSION earthdistance;
 
 CREATE TABLE users (
