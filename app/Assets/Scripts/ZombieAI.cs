@@ -54,8 +54,10 @@ public class ZombieAI : MonoBehaviour
     private Vector3 spawnPoint;
     private Vector3 currentPatrolTarget;
     private float lastStateChangeTime;
+    private float lastNavUpdateTime = 0f; // Timer for NavMesh updates
     private bool hasTarget = false;
     private Transform playerTarget;
+    private bool lastCanSeePlayer = false; // For vision debugging
     
     // Coroutines
     private Coroutine currentBehaviorCoroutine;
@@ -162,6 +164,13 @@ public class ZombieAI : MonoBehaviour
         if (vision != null && playerTarget != null)
         {
             vision.UpdateVision(playerTarget.position);
+            
+            // Debug: Log vision state changes
+            if (vision.CanSeePlayer != lastCanSeePlayer)
+            {
+                Debug.Log($"ZombieAI: Vision changed - CanSeePlayer: {vision.CanSeePlayer}, Distance: {Vector3.Distance(transform.position, playerTarget.position):F1}m");
+                lastCanSeePlayer = vision.CanSeePlayer;
+            }
         }
         
         // Handle state-specific updates
@@ -222,6 +231,20 @@ public class ZombieAI : MonoBehaviour
         // Automatically transition to chase after scream duration
         if (Time.time - lastStateChangeTime >= screamDuration)
         {
+            Debug.Log("ZombieAI: Alert state timeout, transitioning to Chase");
+            ChangeState(AIState.Chase);
+        }
+        
+        // Additional failsafe: if we've been in alert too long, force transition
+        if (Time.time - lastStateChangeTime >= screamDuration * 2f)
+        {
+            Debug.LogWarning("ZombieAI: Alert state STUCK! Emergency transition to Chase");
+            // Force animator state
+            if (animator != null)
+            {
+                animator.SetBool("IsDetecting", false);
+                animator.SetBool("IsChasing", true);
+            }
             ChangeState(AIState.Chase);
         }
     }
@@ -240,10 +263,12 @@ public class ZombieAI : MonoBehaviour
         }
         
         // Update chase target every 0.2 seconds for performance
-        if (Time.time - lastStateChangeTime > 0.2f)
+        // Use a separate timer to avoid messing with state change time
+        if (Time.time - lastNavUpdateTime > 0.2f)
         {
             navMeshAgent.SetDestination(playerTarget.position);
-            lastStateChangeTime = Time.time;
+            lastNavUpdateTime = Time.time;
+            Debug.Log($"ZombieAI: Updating chase target to {playerTarget.position}, distance: {distanceToPlayer:F1}m");
         }
     }
     
@@ -369,6 +394,15 @@ public class ZombieAI : MonoBehaviour
         // Stop moving and face player
         navMeshAgent.ResetPath();
         navMeshAgent.speed = 0;
+        
+        Debug.Log($"ZombieAI: Entering Alert state, will scream for {screamDuration}s");
+        
+        // Add fallback timeout in case animation gets stuck
+        if (currentBehaviorCoroutine != null)
+        {
+            StopCoroutine(currentBehaviorCoroutine);
+        }
+        currentBehaviorCoroutine = StartCoroutine(AlertTimeoutCoroutine());
     }
     
     void EnterChaseState()
@@ -430,6 +464,20 @@ public class ZombieAI : MonoBehaviour
         currentBehaviorCoroutine = null;
     }
     
+    IEnumerator AlertTimeoutCoroutine()
+    {
+        Debug.Log($"ZombieAI: Alert timeout coroutine started, waiting {screamDuration * 1.5f}s");
+        yield return new WaitForSeconds(screamDuration * 1.5f); // 50% longer than normal scream
+        
+        // Force transition to chase if still in alert state
+        if (currentState == AIState.Alert)
+        {
+            Debug.LogWarning("ZombieAI: Alert state timeout! Forcing transition to Chase");
+            ChangeState(AIState.Chase);
+        }
+        currentBehaviorCoroutine = null;
+    }
+    
     void UpdateAnimations()
     {
         if (animator == null) return;
@@ -437,36 +485,77 @@ public class ZombieAI : MonoBehaviour
         // Set AI state parameter
         animator.SetInteger("AIState", (int)currentState);
         
-        // Set specific animation triggers
+        // Get current animation state info for debugging
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+        
+        // PURE BOOL-BASED ANIMATION CONTROL - No Speed dependency!
+        // Clear all states first
+        animator.SetBool("IsDetecting", false);
+        animator.SetBool("IsChasing", false);
+        animator.SetBool("IsAttacking", false);
+        
+        // Set the appropriate state
         switch (currentState)
         {
             case AIState.Patrol:
-                animator.SetBool("IsDetecting", false);
-                animator.SetBool("IsChasing", false);
-                animator.SetBool("IsAttacking", false);
+                // All bools are false - will use Idle/Walk based on Speed (which is fine for patrol)
                 break;
             case AIState.Alert:
                 animator.SetBool("IsDetecting", true);
-                animator.SetBool("IsChasing", false);
-                animator.SetBool("IsAttacking", false);
+                // NOTE: We don't set IsChasing here initially - let the scream play first
+                
+                // Debug: Check if we're in scream state and log progress
+                if (stateInfo.IsName("Scream"))
+                {
+                    Debug.Log($"ZombieAI: In Scream animation - Progress: {stateInfo.normalizedTime:F2}");
+                    
+                    // After scream starts, enable chasing to allow transition
+                    if (stateInfo.normalizedTime > 0.1f) // 10% into scream animation
+                    {
+                        animator.SetBool("IsChasing", true);
+                    }
+                    
+                    // Force transition if animation is stuck
+                    if (stateInfo.normalizedTime > 1.1f) // 110% through animation
+                    {
+                        Debug.LogWarning("ZombieAI: Scream animation stuck! Forcing chase state");
+                        ChangeState(AIState.Chase);
+                    }
+                }
                 break;
             case AIState.Chase:
-                animator.SetBool("IsDetecting", false);
                 animator.SetBool("IsChasing", true);
-                animator.SetBool("IsAttacking", false);
                 break;
             case AIState.Attack:
-                animator.SetBool("IsDetecting", false);
-                animator.SetBool("IsChasing", false);
                 animator.SetBool("IsAttacking", true);
                 break;
         }
         
-        // Movement speed for existing system
-        if (movement != null)
+        // MINIMALIST APPROACH: Only set Speed for patrol, ignore it otherwise
+        // The Bool parameters should handle all state-specific animations
+        if (currentState == AIState.Patrol)
         {
-            float currentSpeed = navMeshAgent.velocity.magnitude;
-            movement.SetAnimationSpeed(currentSpeed);
+            // Only during patrol do we care about actual movement speed
+            float patrolSpeed = navMeshAgent.velocity.magnitude;
+            animator.SetFloat("Speed", patrolSpeed);
+            
+            if (movement != null)
+            {
+                movement.SetAnimationSpeed(patrolSpeed);
+            }
+        }
+        else
+        {
+            // For all other states, the Bool parameters should control animations
+            // Set Speed to a neutral value that won't interfere
+            animator.SetFloat("Speed", 0.5f); // Neutral value - not 0, not high
+        }
+        
+        // Debug animation state
+        if (Time.frameCount % 60 == 0) // Every 60 frames (about once per second)
+        {
+            float currentSpeed = animator.GetFloat("Speed");
+            Debug.Log($"ZombieAI: State={currentState}, AnimState={stateInfo.shortNameHash}, Speed={currentSpeed:F2}, IsChasing={animator.GetBool("IsChasing")}, IsDetecting={animator.GetBool("IsDetecting")}");
         }
     }
     
@@ -482,8 +571,8 @@ public class ZombieAI : MonoBehaviour
     
     void HandlePlayerLost()
     {
-        Debug.Log("ZombieAI: Player lost");
-        if (currentState == AIState.Chase || currentState == AIState.Attack)
+        Debug.Log($"ZombieAI: Player lost from state {currentState}");
+        if (currentState == AIState.Chase || currentState == AIState.Attack || currentState == AIState.Alert)
         {
             ChangeState(AIState.Patrol);
         }

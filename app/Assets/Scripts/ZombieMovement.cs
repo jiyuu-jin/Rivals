@@ -38,6 +38,14 @@ public class ZombieMovement : MonoBehaviour
     
     void Update()
     {
+        // Check if ZombieAI is present and controlling animations
+        ZombieAI zombieAI = GetComponent<ZombieAI>();
+        if (zombieAI != null)
+        {
+            // Let ZombieAI handle animation parameters
+            return;
+        }
+        
         // Only update at specified intervals for performance
         if (Time.time - lastUpdateTime >= updateInterval)
         {

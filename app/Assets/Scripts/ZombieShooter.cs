@@ -35,6 +35,7 @@ public class ZombieShooter : MonoBehaviour
     private Camera arCamera;
     private AudioSource audioSource;
     private CrosshairController crosshair;
+    private PlayerHealth playerHealth;
     
     // Shooting control
     private bool canShoot = true;
@@ -43,6 +44,9 @@ public class ZombieShooter : MonoBehaviour
     void Start()
     {
         arCamera = Camera.main;
+        
+        // Get PlayerHealth component
+        playerHealth = GetComponent<PlayerHealth>();
         
         // Add audio source if needed
         audioSource = GetComponent<AudioSource>();
@@ -108,6 +112,13 @@ public class ZombieShooter : MonoBehaviour
     void Shoot()
     {
         Debug.Log("=== ZombieShooter: SHOOT METHOD CALLED ===");
+        
+        // Don't shoot if player is dead
+        if (playerHealth != null && playerHealth.IsDead)
+        {
+            Debug.Log("ZombieShooter: Cannot shoot - player is dead");
+            return;
+        }
         
         // Mark that we've shot
         canShoot = false;

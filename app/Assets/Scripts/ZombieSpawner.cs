@@ -54,6 +54,7 @@ public class ZombieSpawner : MonoBehaviour
     private bool hasFoundFloor = false;
     private bool floorHeightLocked = false; // Once set, don't change the floor height
     private bool spawningEnabled = false; // Only start spawning after user clicks "Ready to Start"
+    private bool isPlayerDead = false; // Stop spawning when player dies
     
     // References to other components
     private GoalManager goalManager;
@@ -74,6 +75,9 @@ public class ZombieSpawner : MonoBehaviour
         }
         
         StartCoroutine(InitializeSystem());
+        
+        // Connect to player death events
+        ConnectToPlayerHealth();
     }
     
     IEnumerator InitializeSystem()
@@ -243,6 +247,9 @@ public class ZombieSpawner : MonoBehaviour
     
     void Update()
     {
+        // Stop all spawning if player is dead
+        if (isPlayerDead) return;
+        
         // Continuously check if we need to spawn more zombies
         if (spawningEnabled && systemReady && hasFoundFloor)
         {
@@ -900,6 +907,74 @@ public class ZombieSpawner : MonoBehaviour
     {
         spawningEnabled = false;
         Debug.Log("ZombieSpawner: Zombie spawning DISABLED!");
+    }
+    
+    /// <summary>
+    /// Reset spawning state for player respawn
+    /// </summary>
+    public void ResetSpawning()
+    {
+        isPlayerDead = false;
+        spawningEnabled = true;
+        
+        // Clear existing zombies
+        ClearAllZombies();
+        
+        // Reset spawn timing
+        lastSpawnTime = Time.time;
+        
+        Debug.Log("ZombieSpawner: Spawning reset for player respawn");
+    }
+    
+    /// <summary>
+    /// Mark player as dead to stop spawning
+    /// </summary>
+    public void SetPlayerDead(bool isDead)
+    {
+        isPlayerDead = isDead;
+        Debug.Log($"ZombieSpawner: Player death state set to {isDead}");
+    }
+    
+    /// <summary>
+    /// Clear all existing zombies from the scene
+    /// </summary>
+    void ClearAllZombies()
+    {
+        foreach (var zombie in spawnedZombies)
+        {
+            if (zombie != null)
+            {
+                Destroy(zombie);
+            }
+        }
+        spawnedZombies.Clear();
+        Debug.Log("ZombieSpawner: All zombies cleared");
+    }
+    
+    /// <summary>
+    /// Connect to PlayerHealth events for death/respawn handling
+    /// </summary>
+    void ConnectToPlayerHealth()
+    {
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            PlayerHealth playerHealth = mainCamera.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.OnPlayerDeath += () => SetPlayerDead(true);
+                playerHealth.OnPlayerRespawn += () => ResetSpawning();
+                Debug.Log("ZombieSpawner: Connected to PlayerHealth events");
+            }
+            else
+            {
+                Debug.LogWarning("ZombieSpawner: PlayerHealth not found on Main Camera");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ZombieSpawner: Main Camera not found");
+        }
     }
     
     // Debug info

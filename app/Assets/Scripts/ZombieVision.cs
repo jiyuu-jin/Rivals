@@ -167,7 +167,7 @@ public class ZombieVision : MonoBehaviour
     void LosePlayer()
     {
         CanSeePlayer = false;
-        Debug.Log("ZombieVision: Lost sight of player");
+        Debug.Log($"ZombieVision: Lost sight of player at distance {Vector3.Distance(transform.position, lastKnownPlayerPosition):F1}m");
         OnPlayerLost?.Invoke();
     }
     

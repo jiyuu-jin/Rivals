@@ -147,6 +147,9 @@ public class ZombieHealth : MonoBehaviour
         // Notify AI system
         OnDeath?.Invoke();
         
+        // Add to score
+        GameScore.AddKill();
+        
         // Play death sound
         if (audioSource != null && deathSound != null)
         {

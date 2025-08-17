@@ -20,12 +20,17 @@ public class PlayerHealth : MonoBehaviour
     [Tooltip("Sound when player takes damage")]
     public AudioClip damageSound;
     
+    [Header("Death Screen")]
+    [Tooltip("Reference to death screen controller")]
+    public DeathScreen deathScreen;
+    
     [Tooltip("Sound when player dies")]
     public AudioClip deathSound;
     
     // Events
     public event Action<int> OnHealthChanged;
     public event Action OnPlayerDeath;
+    public event Action OnPlayerRespawn;
     
     // Components
     private AudioSource audioSource;
@@ -45,6 +50,15 @@ public class PlayerHealth : MonoBehaviour
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
+        
+        // Find death screen if not assigned
+        if (deathScreen == null)
+        {
+            deathScreen = FindFirstObjectByType<DeathScreen>();
+        }
+        
+        // Start game scoring
+        GameScore.StartGame();
         
         // Create damage overlay
         CreateDamageOverlay();
@@ -170,6 +184,16 @@ public class PlayerHealth : MonoBehaviour
             audioSource.PlayOneShot(deathSound);
         }
         
+        // Show death screen
+        if (deathScreen != null)
+        {
+            deathScreen.ShowDeathScreen();
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHealth: No death screen found!");
+        }
+        
         // Trigger death event
         OnPlayerDeath?.Invoke();
         
@@ -196,10 +220,14 @@ public class PlayerHealth : MonoBehaviour
     
     public void Respawn()
     {
-        currentHealth = maxHealth;
         IsDead = false;
+        currentHealth = maxHealth;
         OnHealthChanged?.Invoke(currentHealth);
-        Debug.Log("PlayerHealth: Player respawned");
+        
+        Debug.Log("PlayerHealth: Player respawned with full health");
+        
+        // Trigger respawn event if needed
+        OnPlayerRespawn?.Invoke();
     }
     
     public float GetHealthPercentage()
