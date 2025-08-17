@@ -83,6 +83,9 @@ public class ShootingDebugger : MonoBehaviour
     
     void OnGUI()
     {
+        // Debug info disabled - uncomment below to re-enable
+        return;
+        
         // Show debug info on screen
         GUI.color = Color.green;
         GUILayout.Label("=== SHOOTING DEBUG INFO ===");

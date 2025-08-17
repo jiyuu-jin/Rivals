@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using System;
 
 public class ZombieHealth : MonoBehaviour
 {
@@ -32,7 +33,11 @@ public class ZombieHealth : MonoBehaviour
     public float hitFlashDuration = 0.2f;
     
     [HideInInspector]
-    private bool isDead = false;
+    public bool isDead = false; // Made public for AI access
+    
+    // Events for AI system
+    public event Action OnDamageTaken;
+    public event Action OnDeath;
     private Renderer[] renderers;
     private AudioSource audioSource;
     private Color[] originalColors;
@@ -99,6 +104,9 @@ public class ZombieHealth : MonoBehaviour
             StartCoroutine(ResetHitTrigger());
         }
         
+        // Notify AI system
+        OnDamageTaken?.Invoke();
+        
         // Visual feedback
         StartCoroutine(FlashOnHit());
         
@@ -135,6 +143,9 @@ public class ZombieHealth : MonoBehaviour
             animator.SetBool("IsHit", false);
             animator.SetFloat("Speed", 0f);
         }
+        
+        // Notify AI system
+        OnDeath?.Invoke();
         
         // Play death sound
         if (audioSource != null && deathSound != null)

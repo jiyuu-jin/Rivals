@@ -580,6 +580,22 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 188148741}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 10621fc72c6644425a6b03a088b91168,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 188148745}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 10621fc72c6644425a6b03a088b91168,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 188148744}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 10621fc72c6644425a6b03a088b91168,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 188148743}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 10621fc72c6644425a6b03a088b91168,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 188148742}
   m_SourcePrefab: {fileID: 100100000, guid: 10621fc72c6644425a6b03a088b91168, type: 3}
 --- !u!1 &188148735 stripped
 GameObject:
@@ -608,6 +624,7 @@ MonoBehaviour:
   removeDelay: 3
   hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   hitFlashDuration: 0.2
+  isDead: 0
 --- !u!64 &188148741
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -630,6 +647,91 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -1445107091153370975, guid: 10621fc72c6644425a6b03a088b91168, type: 3}
+--- !u!114 &188148742
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 188148735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ef1b44eb70094659a67ea8df5f72bb7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieAttack
+  attackDamage: 25
+  attackCooldown: 1.5
+  attackRange: 1.5
+  attackAnimationDuration: 1
+  damagePoint: 0.6
+  attackHitEffect: {fileID: 0}
+  attackSound: {fileID: 0}
+  hitSound: {fileID: 0}
+--- !u!114 &188148743
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 188148735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19e75b9031085425cb5c39d48cfc969b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieVision
+  maxDetectionRange: 12
+  fieldOfViewAngle: 120
+  visionUpdateRate: 0.2
+  obstacleLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  eyeHeight: 1.6
+  hearingRange: 15
+  noiseMemoryTime: 3
+  showDebugRays: 1
+  showFieldOfView: 1
+--- !u!114 &188148744
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 188148735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c01ffb37f7d34f35b47565f0fb4f970, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieAI
+  detectionRange: 10
+  attackRange: 1.5
+  patrolRadius: 5
+  patrolWaitTime: 3
+  walkSpeed: 1.5
+  runSpeed: 4
+  screamDuration: 1.5
+  currentState: 0
+--- !u!195 &188148745
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 188148735}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 1.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 1.5
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 1.8
+  m_BaseOffset: 0
+  m_WalkableMask: 1
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &212114235
 GameObject:
   m_ObjectHideFlags: 0
@@ -802,6 +904,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1976924000}
+    - targetCorrespondingSourceObject: {fileID: 2512387470528047719, guid: 48cb3fb68c91eb94999fd99957eb0cae,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1976924006}
     - targetCorrespondingSourceObject: {fileID: 2512387469002778309, guid: 48cb3fb68c91eb94999fd99957eb0cae,
         type: 3}
       insertIndex: -1
@@ -810,6 +916,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 713788277}
+    - targetCorrespondingSourceObject: {fileID: 2512387469002778309, guid: 48cb3fb68c91eb94999fd99957eb0cae,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 713788278}
   m_SourcePrefab: {fileID: 100100000, guid: 48cb3fb68c91eb94999fd99957eb0cae, type: 3}
 --- !u!114 &331264286 stripped
 MonoBehaviour:
@@ -2204,6 +2314,24 @@ MonoBehaviour:
   muzzleFlashPrefab: {fileID: 0}
   hitEffectPrefab: {fileID: 0}
   shootSound: {fileID: 0}
+--- !u!114 &713788278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 713788258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00873fe2485ea4d5fbe367b3ab60134e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  maxHealth: 100
+  currentHealth: 0
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 0.3}
+  damageFlashDuration: 0.2
+  damageSound: {fileID: 0}
+  deathSound: {fileID: 0}
 --- !u!1001 &805527811
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6157,6 +6285,25 @@ MonoBehaviour:
   shootLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1976924006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1976923995}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e9e30e8f807541efa32f470dbab22f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ARNavMeshBuilder
+  rebuildInterval: 2
+  minPlaneArea: 0.5
+  surfaceHeight: 0.02
+  createWallObstacles: 1
+  wallObstacleHeight: 2
+  maxPlanesPerFrame: 5
+  enableDebugLogs: 1
 --- !u!114 &2001374502 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6402244310720262706, guid: 48cb3fb68c91eb94999fd99957eb0cae,
