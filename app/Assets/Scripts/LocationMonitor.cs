@@ -19,7 +19,7 @@ public class LocationMonitor : MonoBehaviour
     private string currentBalance = "0.00";
     
     // Chain switching
-    private string[] availableChains = { "anvil", "flow_mainnet", "chiliz_mainnet" };
+    private string[] availableChains = { "anvil", "flow_mainnet", "chiliz_mainnet", "flow_testnet", "chiliz_testnet" };
     private int currentChainIndex = 0;
     private string currentChain => availableChains[currentChainIndex];
 
@@ -400,6 +400,8 @@ public class LocationMonitor : MonoBehaviour
             case "anvil": return "Local";
             case "flow_mainnet": return "Flow";
             case "chiliz_mainnet": return "Chiliz";
+            case "flow_testnet": return "Flow Testnet";
+            case "chiliz_testnet": return "Chiliz Testnet";
             default: return currentChain;
         }
     }
