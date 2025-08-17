@@ -15,7 +15,7 @@ public class ZombieVision : MonoBehaviour
     public float visionUpdateRate = 0.2f;
     
     [Tooltip("Layers that block line of sight")]
-    public LayerMask obstacleLayerMask = -1;
+    public LayerMask obstacleLayerMask = 1 << 0; // Default layer only
     
     [Tooltip("Height offset for vision raycast (from zombie's feet)")]
     public float eyeHeight = 1.6f;
@@ -76,6 +76,13 @@ public class ZombieVision : MonoBehaviour
         
         // Check if player is in detection range
         float distanceToPlayer = Vector3.Distance(transform.position, playerPosition);
+        
+        // Debug vision check
+        if (Time.frameCount % 60 == 0) // Every second
+        {
+            Debug.Log($"ZombieVision: Checking - Distance: {distanceToPlayer:F1}m (max: {maxDetectionRange}m), CanSee: {CanSeePlayer}");
+        }
+        
         if (distanceToPlayer > maxDetectionRange)
         {
             if (CanSeePlayer)
@@ -86,8 +93,13 @@ public class ZombieVision : MonoBehaviour
         }
         
         // Check if player is in field of view
-        if (!IsInFieldOfView(playerPosition))
+        bool inFOV = IsInFieldOfView(playerPosition);
+        if (!inFOV)
         {
+            if (Time.frameCount % 60 == 0) // Debug every second
+            {
+                Debug.Log($"ZombieVision: Player NOT in FOV");
+            }
             if (CanSeePlayer)
             {
                 LosePlayer();
@@ -96,7 +108,13 @@ public class ZombieVision : MonoBehaviour
         }
         
         // Check line of sight
-        if (HasClearLineOfSight(playerPosition))
+        bool hasLOS = HasClearLineOfSight(playerPosition);
+        if (Time.frameCount % 60 == 0) // Debug every second
+        {
+            Debug.Log($"ZombieVision: In FOV: {inFOV}, Has LOS: {hasLOS}");
+        }
+        
+        if (hasLOS)
         {
             if (!CanSeePlayer)
             {
@@ -127,23 +145,52 @@ public class ZombieVision : MonoBehaviour
         Vector3 directionToTarget = targetPosition - eyePosition;
         float distanceToTarget = directionToTarget.magnitude;
         
-        // Perform raycast to check for obstacles
+        // For AR, we need to be more careful about what blocks line of sight
+        // Use a more specific layer mask or tag checking
         RaycastHit hit;
-        if (Physics.Raycast(eyePosition, directionToTarget.normalized, out hit, distanceToTarget, obstacleLayerMask))
+        
+        // Use layer mask of -1 but exclude certain layers if needed
+        int layerMask = ~(1 << LayerMask.NameToLayer("UI") | 1 << LayerMask.NameToLayer("Ignore Raycast"));
+        
+        if (Physics.Raycast(eyePosition, directionToTarget.normalized, out hit, distanceToTarget, layerMask))
         {
-            // Check if we hit an AR plane or obstacle
-            if (hit.collider.name.Contains("ARPlane"))
+            // Check what we hit
+            GameObject hitObject = hit.collider.gameObject;
+            
+            // Don't let the camera block line of sight to itself
+            if (hitObject.CompareTag("MainCamera") || hitObject.name.Contains("Camera"))
             {
-                // Hit an AR plane, this blocks line of sight
+                // We hit the camera, that means we can see it!
+                if (showDebugRays)
+                {
+                    Debug.DrawRay(eyePosition, directionToTarget.normalized * distanceToTarget, Color.green, 0.1f);
+                }
+                return true;
+            }
+            
+            // Check if we hit an AR plane or wall
+            if (hitObject.name.Contains("ARPlane") || hitObject.name.Contains("NavMesh_Wall"))
+            {
+                // Hit an AR plane or wall, this blocks line of sight
                 if (showDebugRays)
                 {
                     Debug.DrawRay(eyePosition, directionToTarget.normalized * hit.distance, Color.red, 0.1f);
+                    Debug.Log($"ZombieVision: Line of sight blocked by {hitObject.name}");
                 }
                 return false;
             }
+            
+            // Hit something else that's not a wall - consider it clear
+            // This helps in AR where we might hit other colliders
+            if (showDebugRays)
+            {
+                Debug.DrawRay(eyePosition, directionToTarget.normalized * distanceToTarget, Color.yellow, 0.1f);
+                Debug.Log($"ZombieVision: Hit {hitObject.name} but considering line of sight clear");
+            }
+            return true;
         }
         
-        // Clear line of sight
+        // No hit at all - clear line of sight
         if (showDebugRays)
         {
             Debug.DrawRay(eyePosition, directionToTarget.normalized * distanceToTarget, Color.green, 0.1f);

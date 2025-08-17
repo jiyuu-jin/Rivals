@@ -1,0 +1,50 @@
+.nav {
+  background: var(--gradient-dark);
+  border-bottom: 1px solid var(--card-border);
+  padding: 0;
+  height: 60px;
+}
+
+.navGroup {
+  height: 100%;
+  justify-content: space-between;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.leftNav,
+.rightNav {
+  gap: 0;
+  height: 100%;
+}
+
+.navItem {
+  color: var(--text-secondary);
+  padding: 0 24px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  position: relative;
+  text-decoration: none;
+}
+
+.navItem:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.navItem.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+  background: rgba(255, 107, 53, 0.1);
+}
+
+.navItem.active:hover {
+  color: var(--accent-primary);
+}

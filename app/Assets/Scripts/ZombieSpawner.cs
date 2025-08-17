@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
+using UnityEngine.AI;
 
 /// <summary>
 /// Randomly spawns zombies on detected AR floor planes
@@ -26,7 +27,7 @@ public class ZombieSpawner : MonoBehaviour
     
     [Header("Floor Detection")]
     [Tooltip("Minimum floor area to spawn on (square meters)")]
-    public float minFloorArea = 1.0f;
+    public float minFloorArea = 0.3f;
     
     [Tooltip("Minimum height below camera to consider floor (meters)")]
     public float minFloorHeight = 0.8f;
@@ -382,7 +383,7 @@ public class ZombieSpawner : MonoBehaviour
         
         // Check if this plane is at a reasonable height difference from our current floor
         float heightDifference = Mathf.Abs(plane.center.y - lowestFloorHeight);
-        if (heightDifference > 0.3f) // Only same-level planes within 30cm
+        if (heightDifference > 1.0f) // Allow planes within 1 meter height difference
         {
             Debug.Log($"ZombieSpawner: Plane rejected - too high above floor. Height diff: {heightDifference:F3}m");
             return false;
@@ -450,10 +451,31 @@ public class ZombieSpawner : MonoBehaviour
         }
         
         // When positioning the zombie, use the lowest detected floor height
+        // Add a small offset to ensure zombie is above the NavMesh surface
         Vector3 finalPosition = spawnPosition;
-        finalPosition.y = lowestFloorHeight; // Use lowest floor height detected
+        finalPosition.y = lowestFloorHeight + 0.1f; // Higher offset for better NavMesh placement
         
-        Debug.Log($"ZombieSpawner: About to instantiate zombie at position {finalPosition}");
+        // Sample the NavMesh to find a valid position
+        NavMeshHit navHit;
+        if (NavMesh.SamplePosition(finalPosition, out navHit, 2.0f, NavMesh.AllAreas))
+        {
+            finalPosition = navHit.position;
+            Debug.Log($"ZombieSpawner: Found valid NavMesh position at {finalPosition}");
+        }
+        else
+        {
+            Debug.LogWarning($"ZombieSpawner: No NavMesh found near {finalPosition}, trying higher position");
+            finalPosition.y += 0.5f;
+            
+            if (!NavMesh.SamplePosition(finalPosition, out navHit, 3.0f, NavMesh.AllAreas))
+            {
+                Debug.LogError("ZombieSpawner: Failed to find valid NavMesh position, aborting spawn");
+                return;
+            }
+            finalPosition = navHit.position;
+        }
+        
+        Debug.Log($"ZombieSpawner: About to instantiate zombie at NavMesh position {finalPosition}");
         
         try
         {
@@ -479,8 +501,37 @@ public class ZombieSpawner : MonoBehaviour
             {
                 Debug.Log($"ZombieSpawner: Successfully spawned zombie at Y={finalPosition.y:F3}m (floor height)");
                 
+                // Tag the zombie properly if the tag exists
+                try
+                {
+                    zombie.tag = "Zombie";
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning("ZombieSpawner: 'Zombie' tag not found. Please add it in Unity Editor: Edit > Project Settings > Tags and Layers");
+                }
+                
                 // Make sure it's active
                 zombie.SetActive(true);
+                
+                // Verify NavMeshAgent is on NavMesh
+                NavMeshAgent agent = zombie.GetComponent<NavMeshAgent>();
+                if (agent != null)
+                {
+                    // Ensure agent is enabled before warping
+                    agent.enabled = true;
+                    
+                    // Use Warp to ensure the agent is properly placed on the NavMesh
+                    if (agent.isOnNavMesh)
+                    {
+                        Debug.Log($"ZombieSpawner: NavMeshAgent already on NavMesh");
+                    }
+                    else
+                    {
+                        agent.Warp(finalPosition);
+                        Debug.Log($"ZombieSpawner: NavMeshAgent warped to position, IsOnNavMesh: {agent.isOnNavMesh}");
+                    }
+                }
         
         // Track spawned zombie
         spawnedZombies.Add(zombie);
@@ -677,8 +728,8 @@ public class ZombieSpawner : MonoBehaviour
                 // Get current position
                 Vector3 position = zombie.transform.position;
                 
-                // Apply the height adjustment
-                position.y += heightDifference;
+                // Set to new floor height with NavMesh offset
+                position.y = lowestFloorHeight + 0.05f;
                 
                 // Update position
                 zombie.transform.position = position;
@@ -792,6 +843,32 @@ public class ZombieSpawner : MonoBehaviour
             // Add animation components to the original prefab too
             AddAnimationComponents(zombiePrefab);
             
+            // Tag the original zombie if the tag exists
+            try
+            {
+                zombiePrefab.tag = "Zombie";
+            }
+            catch (UnityException e)
+            {
+                Debug.LogWarning("ZombieSpawner: 'Zombie' tag not found. Please add it in Unity Editor: Edit > Project Settings > Tags and Layers");
+            }
+            
+            // Ensure NavMeshAgent is configured
+            NavMeshAgent agent = zombiePrefab.GetComponent<NavMeshAgent>();
+            if (agent != null)
+            {
+                agent.enabled = true;
+                // Try to place on NavMesh
+                NavMeshHit navHit;
+                if (NavMesh.SamplePosition(zombiePosition, out navHit, 2.0f, NavMesh.AllAreas))
+                {
+                    zombiePosition = navHit.position;
+                    zombiePrefab.transform.position = zombiePosition;
+                    agent.Warp(zombiePosition);
+                    Debug.Log($"ZombieSpawner: Placed original zombie on NavMesh at {zombiePosition}");
+                }
+            }
+            
             zombiePrefab.SetActive(true);
             Debug.Log($"ZombieSpawner: Showing and positioning original zombie prefab at Y={zombiePosition.y:F3}m");
         }
@@ -801,6 +878,24 @@ public class ZombieSpawner : MonoBehaviour
         }
         
         Debug.Log("ZombieSpawner: Floor height set to Y=" + lowestFloorHeight + "m. Zombie spawning ENABLED!");
+        
+        // Wait a bit for NavMesh to be built before spawning
+        StartCoroutine(DelayedFirstSpawn());
+    }
+    
+    IEnumerator DelayedFirstSpawn()
+    {
+        Debug.Log("ZombieSpawner: Waiting for NavMesh to build...");
+        
+        // Force NavMesh rebuild
+        ARNavMeshBuilder navBuilder = FindObjectOfType<ARNavMeshBuilder>();
+        if (navBuilder != null)
+        {
+            navBuilder.ForceRebuildNavMesh();
+            Debug.Log("ZombieSpawner: Triggered NavMesh rebuild");
+        }
+        
+        yield return new WaitForSeconds(2.0f);
         
         // Force spawn a zombie for testing
         ForceSpawnZombie();
@@ -848,7 +943,19 @@ public class ZombieSpawner : MonoBehaviour
         
         // Create a position in front of the camera
         Vector3 spawnPosition = arCamera.transform.position + arCamera.transform.forward * 2f;
-        spawnPosition.y = lowestFloorHeight; // Set to floor height
+        spawnPosition.y = lowestFloorHeight + 0.1f; // Set to floor height with offset
+        
+        // Sample the NavMesh to find a valid position
+        NavMeshHit navHit;
+        if (NavMesh.SamplePosition(spawnPosition, out navHit, 3.0f, NavMesh.AllAreas))
+        {
+            spawnPosition = navHit.position;
+            Debug.Log($"ZombieSpawner: Found valid NavMesh position at {spawnPosition}");
+        }
+        else
+        {
+            Debug.LogWarning($"ZombieSpawner: No NavMesh found near {spawnPosition}, spawning anyway");
+        }
         
         try
         {
@@ -857,8 +964,31 @@ public class ZombieSpawner : MonoBehaviour
             
             if (zombie != null)
             {
+                // Tag the zombie if the tag exists
+                try
+                {
+                    zombie.tag = "Zombie";
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning("ZombieSpawner: 'Zombie' tag not found. Please add it in Unity Editor: Edit > Project Settings > Tags and Layers");
+                }
+                
                 Debug.Log($"ZombieSpawner: Successfully forced spawn of zombie at {spawnPosition}");
                 zombie.SetActive(true);
+                
+                // Ensure NavMeshAgent is properly placed
+                NavMeshAgent agent = zombie.GetComponent<NavMeshAgent>();
+                if (agent != null)
+                {
+                    agent.enabled = true;
+                    if (!agent.isOnNavMesh)
+                    {
+                        agent.Warp(spawnPosition);
+                        Debug.Log($"ZombieSpawner: Warped agent to NavMesh, IsOnNavMesh: {agent.isOnNavMesh}");
+                    }
+                }
+                
                 spawnedZombies.Add(zombie);
                 lastSpawnTime = Time.time;
             }
@@ -879,6 +1009,20 @@ public class ZombieSpawner : MonoBehaviour
     void AddAnimationComponents(GameObject zombie)
     {
         if (zombie == null) return;
+        
+        // Ensure NavMeshAgent exists
+        NavMeshAgent agent = zombie.GetComponent<NavMeshAgent>();
+        if (agent == null)
+        {
+            agent = zombie.AddComponent<NavMeshAgent>();
+            Debug.Log("ZombieSpawner: Added NavMeshAgent component to zombie");
+            
+            // Configure NavMeshAgent
+            agent.speed = 4f;
+            agent.stoppingDistance = 1.5f;
+            agent.angularSpeed = 120f;
+            agent.acceleration = 8f;
+        }
         
         // Add Animator if it doesn't exist
         Animator animator = zombie.GetComponent<Animator>();

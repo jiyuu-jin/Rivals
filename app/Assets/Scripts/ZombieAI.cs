@@ -101,6 +101,25 @@ public class ZombieAI : MonoBehaviour
         navMeshAgent.speed = walkSpeed;
         navMeshAgent.stoppingDistance = attackRange;
         navMeshAgent.autoBraking = true;
+        navMeshAgent.updateRotation = true;
+        navMeshAgent.updatePosition = true;
+        navMeshAgent.angularSpeed = 120f; // Reasonable turn speed
+        navMeshAgent.acceleration = 8f; // Quick acceleration
+        
+        // Try to place on NavMesh if not already
+        if (!navMeshAgent.isOnNavMesh)
+        {
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(transform.position, out navHit, 2.0f, NavMesh.AllAreas))
+            {
+                navMeshAgent.Warp(navHit.position);
+                Debug.Log($"ZombieAI: Initially placed on NavMesh at {navHit.position}");
+            }
+            else
+            {
+                Debug.LogError($"ZombieAI: Failed to place on NavMesh at start! Position: {transform.position}");
+            }
+        }
     }
     
     void InitializeAI()
@@ -160,6 +179,17 @@ public class ZombieAI : MonoBehaviour
         if (currentState == AIState.Dead || health != null && health.isDead)
             return;
             
+        // TEMPORARY FIX: If zombie is stuck in patrol with scream animation, force alert
+        if (currentState == AIState.Patrol && animator != null)
+        {
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.IsName("Scream") || stateInfo.IsName("Zombie Scream"))
+            {
+                Debug.LogError("ZombieAI: STUCK IN PATROL WITH SCREAM! Forcing Alert state");
+                ChangeState(AIState.Alert);
+            }
+        }
+            
         // Update vision system
         if (vision != null && playerTarget != null)
         {
@@ -171,6 +201,15 @@ public class ZombieAI : MonoBehaviour
                 Debug.Log($"ZombieAI: Vision changed - CanSeePlayer: {vision.CanSeePlayer}, Distance: {Vector3.Distance(transform.position, playerTarget.position):F1}m");
                 lastCanSeePlayer = vision.CanSeePlayer;
             }
+        }
+        else if (vision == null)
+        {
+            Debug.LogError("ZombieAI: Vision component is null!");
+        }
+        else if (playerTarget == null)
+        {
+            Debug.LogWarning("ZombieAI: Player target is null! Attempting to find camera...");
+            FindPlayerTarget();
         }
         
         // Handle state-specific updates
@@ -204,6 +243,21 @@ public class ZombieAI : MonoBehaviour
     
     void UpdatePatrolState()
     {
+        // Check if agent is on NavMesh
+        if (!navMeshAgent.isOnNavMesh)
+        {
+            Debug.LogWarning("ZombieAI: Not on NavMesh in patrol state!");
+            return;
+        }
+        
+        // Check if we have a valid path or if path failed
+        if (!navMeshAgent.hasPath && !navMeshAgent.pathPending)
+        {
+            // No path, set a new patrol target
+            SetNewPatrolTarget();
+            return;
+        }
+        
         // Check if we've reached our patrol destination
         if (!navMeshAgent.pathPending && navMeshAgent.remainingDistance < 0.5f)
         {
@@ -255,6 +309,37 @@ public class ZombieAI : MonoBehaviour
         
         float distanceToPlayer = Vector3.Distance(transform.position, playerTarget.position);
         
+        // Debug NavMesh status
+        if (Time.frameCount % 30 == 0) // Every half second
+        {
+            Debug.Log($"ZombieAI Chase Debug - Distance: {distanceToPlayer:F1}m, " +
+                     $"HasPath: {navMeshAgent.hasPath}, PathPending: {navMeshAgent.pathPending}, " +
+                     $"PathStatus: {navMeshAgent.pathStatus}, Velocity: {navMeshAgent.velocity.magnitude:F1}m/s, " +
+                     $"IsOnNavMesh: {navMeshAgent.isOnNavMesh}");
+        }
+        
+        // If no valid path after some time, use direct movement
+        if (!navMeshAgent.hasPath && !navMeshAgent.pathPending && Time.time - lastNavUpdateTime > 0.5f)
+        {
+            // Direct movement toward player
+            Vector3 direction = (playerTarget.position - transform.position).normalized;
+            direction.y = 0; // Keep on horizontal plane
+            
+            // Move using NavMeshAgent.Move
+            navMeshAgent.Move(direction * runSpeed * Time.deltaTime);
+            
+            // Rotate toward player
+            if (direction != Vector3.zero)
+            {
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 5f);
+            }
+            
+            if (Time.frameCount % 60 == 0)
+            {
+                Debug.Log("ZombieAI: Using direct movement fallback due to invalid path");
+            }
+        }
+        
         // Check if close enough to attack
         if (distanceToPlayer <= attackRange)
         {
@@ -266,9 +351,54 @@ public class ZombieAI : MonoBehaviour
         // Use a separate timer to avoid messing with state change time
         if (Time.time - lastNavUpdateTime > 0.2f)
         {
-            navMeshAgent.SetDestination(playerTarget.position);
+            // Only update destination if player has moved significantly
+            Vector3 currentDestination = navMeshAgent.destination;
+            Vector3 targetPosition = playerTarget.position;
+            
+            // Project the player position onto the NavMesh
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(targetPosition, out navHit, 5.0f, NavMesh.AllAreas))
+            {
+                targetPosition = navHit.position;
+            }
+            else
+            {
+                // If can't find NavMesh near player, try projecting down
+                Vector3 downPosition = targetPosition;
+                downPosition.y -= 10f; // Look far down
+                if (NavMesh.SamplePosition(downPosition, out navHit, 15.0f, NavMesh.AllAreas))
+                {
+                    targetPosition = navHit.position;
+                    Debug.Log($"ZombieAI: Found NavMesh below player at {targetPosition}");
+                }
+                else
+                {
+                    Debug.LogWarning($"ZombieAI: Cannot find NavMesh near player position {playerTarget.position}!");
+                }
+            }
+            
+            float destDist = Vector3.Distance(currentDestination, targetPosition);
+            
+            if (destDist > 0.5f) // Player moved more than 0.5m
+            {
+                navMeshAgent.SetDestination(targetPosition);
+                Debug.Log($"ZombieAI: Updating chase target to {targetPosition}, distance: {distanceToPlayer:F1}m");
+                
+                // Debug path status
+                if (!navMeshAgent.hasPath && !navMeshAgent.pathPending)
+                {
+                    Debug.LogWarning($"ZombieAI: Failed to create path! Status: {navMeshAgent.pathStatus}");
+                    
+                    // Try fallback movement
+                    if (movement != null)
+                    {
+                        Vector3 direction = (targetPosition - transform.position).normalized;
+                        navMeshAgent.Move(direction * runSpeed * Time.deltaTime);
+                        Debug.Log("ZombieAI: Using fallback movement");
+                    }
+                }
+            }
             lastNavUpdateTime = Time.time;
-            Debug.Log($"ZombieAI: Updating chase target to {playerTarget.position}, distance: {distanceToPlayer:F1}m");
         }
     }
     
@@ -409,10 +539,35 @@ public class ZombieAI : MonoBehaviour
     {
         navMeshAgent.speed = runSpeed;
         navMeshAgent.stoppingDistance = attackRange;
+        navMeshAgent.updateRotation = true; // Ensure agent controls rotation
+        navMeshAgent.isStopped = false; // Make sure agent isn't stopped
         
         if (playerTarget != null)
         {
-            navMeshAgent.SetDestination(playerTarget.position);
+            // Project player position onto NavMesh
+            Vector3 targetPosition = playerTarget.position;
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(targetPosition, out navHit, 5.0f, NavMesh.AllAreas))
+            {
+                targetPosition = navHit.position;
+            }
+            else
+            {
+                // Try projecting down
+                Vector3 downPosition = targetPosition;
+                downPosition.y -= 10f;
+                if (NavMesh.SamplePosition(downPosition, out navHit, 15.0f, NavMesh.AllAreas))
+                {
+                    targetPosition = navHit.position;
+                }
+            }
+            
+            navMeshAgent.SetDestination(targetPosition);
+            Debug.Log($"ZombieAI: Entering Chase state - Target: {targetPosition}, Agent enabled: {navMeshAgent.enabled}, IsOnNavMesh: {navMeshAgent.isOnNavMesh}");
+        }
+        else
+        {
+            Debug.LogWarning("ZombieAI: Entering Chase state but no player target!");
         }
     }
     
@@ -435,6 +590,11 @@ public class ZombieAI : MonoBehaviour
     
     void SetNewPatrolTarget()
     {
+        if (!navMeshAgent.isOnNavMesh)
+        {
+            Debug.LogWarning("ZombieAI: Not on NavMesh, cannot set patrol target");
+            return;
+        }
         // Generate random patrol point within radius
         Vector3 randomDirection = Random.insideUnitSphere * patrolRadius;
         randomDirection += spawnPoint;
@@ -488,6 +648,14 @@ public class ZombieAI : MonoBehaviour
         // Get current animation state info for debugging
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
         
+        // Check for animation state mismatch
+        if (currentState == AIState.Patrol && (stateInfo.IsName("Scream") || stateInfo.IsName("Zombie Scream")))
+        {
+            Debug.LogError($"ZombieAI: ANIMATION MISMATCH! State is {currentState} but playing Scream animation!");
+            // Force animator back to idle
+            animator.Play("Idle", 0, 0f);
+        }
+        
         // PURE BOOL-BASED ANIMATION CONTROL - No Speed dependency!
         // Clear all states first
         animator.SetBool("IsDetecting", false);
@@ -505,9 +673,9 @@ public class ZombieAI : MonoBehaviour
                 // NOTE: We don't set IsChasing here initially - let the scream play first
                 
                 // Debug: Check if we're in scream state and log progress
-                if (stateInfo.IsName("Scream"))
+                if (stateInfo.IsName("Scream") || stateInfo.IsName("Zombie Scream"))
                 {
-                    Debug.Log($"ZombieAI: In Scream animation - Progress: {stateInfo.normalizedTime:F2}");
+                    Debug.Log($"ZombieAI: In Scream animation - Progress: {stateInfo.normalizedTime:F2}, Loop: {stateInfo.loop}");
                     
                     // After scream starts, enable chasing to allow transition
                     if (stateInfo.normalizedTime > 0.1f) // 10% into scream animation
@@ -515,12 +683,18 @@ public class ZombieAI : MonoBehaviour
                         animator.SetBool("IsChasing", true);
                     }
                     
-                    // Force transition if animation is stuck
-                    if (stateInfo.normalizedTime > 1.1f) // 110% through animation
+                    // Force transition if animation is stuck or looping
+                    if (stateInfo.normalizedTime > 0.9f || stateInfo.loop) // 90% through or looping
                     {
-                        Debug.LogWarning("ZombieAI: Scream animation stuck! Forcing chase state");
+                        Debug.LogWarning("ZombieAI: Scream animation complete/looping! Forcing chase state");
                         ChangeState(AIState.Chase);
                     }
+                }
+                else
+                {
+                    // If we're in Alert state but not playing scream, something's wrong
+                    Debug.LogWarning($"ZombieAI: In Alert state but not playing scream animation (hash: {stateInfo.shortNameHash}), forcing chase");
+                    ChangeState(AIState.Chase);
                 }
                 break;
             case AIState.Chase:
@@ -531,24 +705,21 @@ public class ZombieAI : MonoBehaviour
                 break;
         }
         
-        // MINIMALIST APPROACH: Only set Speed for patrol, ignore it otherwise
-        // The Bool parameters should handle all state-specific animations
-        if (currentState == AIState.Patrol)
+        // Set speed based on actual movement
+        float actualSpeed = navMeshAgent.velocity.magnitude;
+        
+        // For chase state, ensure we show running animation even if using fallback movement
+        if (currentState == AIState.Chase && actualSpeed < 0.1f)
         {
-            // Only during patrol do we care about actual movement speed
-            float patrolSpeed = navMeshAgent.velocity.magnitude;
-            animator.SetFloat("Speed", patrolSpeed);
-            
-            if (movement != null)
-            {
-                movement.SetAnimationSpeed(patrolSpeed);
-            }
+            // If we're supposed to be chasing but not moving, force run animation
+            actualSpeed = runSpeed * 0.8f; // Show run animation
         }
-        else
+        
+        animator.SetFloat("Speed", actualSpeed);
+        
+        if (movement != null)
         {
-            // For all other states, the Bool parameters should control animations
-            // Set Speed to a neutral value that won't interfere
-            animator.SetFloat("Speed", 0.5f); // Neutral value - not 0, not high
+            movement.SetAnimationSpeed(actualSpeed);
         }
         
         // Debug animation state
@@ -562,10 +733,15 @@ public class ZombieAI : MonoBehaviour
     // Event Handlers
     void HandlePlayerDetected()
     {
-        Debug.Log("ZombieAI: Player detected!");
+        Debug.Log($"ZombieAI: Player detected! Current state: {currentState}");
         if (currentState == AIState.Patrol)
         {
+            Debug.Log("ZombieAI: Transitioning from Patrol to Alert");
             ChangeState(AIState.Alert);
+        }
+        else
+        {
+            Debug.Log($"ZombieAI: Already in state {currentState}, not transitioning to Alert");
         }
     }
     
@@ -591,6 +767,75 @@ public class ZombieAI : MonoBehaviour
     {
         Debug.Log("ZombieAI: Zombie died");
         ChangeState(AIState.Dead);
+    }
+    
+    // Public method to manually trigger player detection (for debugging)
+    public void ForceDetectPlayer()
+    {
+        Debug.Log("ZombieAI: Manually forcing player detection");
+        if (playerTarget == null)
+        {
+            FindPlayerTarget();
+        }
+        
+        if (currentState == AIState.Patrol)
+        {
+            ChangeState(AIState.Alert);
+        }
+        else if (currentState == AIState.Alert)
+        {
+            ChangeState(AIState.Chase);
+        }
+    }
+    
+    // Public method to fix stuck zombies
+    public void FixStuckZombie()
+    {
+        Debug.Log("ZombieAI: Attempting to fix stuck zombie");
+        
+        // Try to place on NavMesh
+        if (navMeshAgent != null)
+        {
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(transform.position, out navHit, 3.0f, NavMesh.AllAreas))
+            {
+                navMeshAgent.Warp(navHit.position);
+                Debug.Log($"ZombieAI: Warped to NavMesh position {navHit.position}, IsOnNavMesh: {navMeshAgent.isOnNavMesh}");
+                
+                // Reset state to patrol
+                ChangeState(AIState.Patrol);
+            }
+            else
+            {
+                Debug.LogError("ZombieAI: Failed to find NavMesh near zombie!");
+            }
+        }
+    }
+    
+    // Debug visualization
+    void OnDrawGizmos()
+    {
+        if (navMeshAgent != null && navMeshAgent.enabled && navMeshAgent.hasPath)
+        {
+            // Draw the path
+            Gizmos.color = Color.yellow;
+            var path = navMeshAgent.path;
+            for (int i = 0; i < path.corners.Length - 1; i++)
+            {
+                Gizmos.DrawLine(path.corners[i], path.corners[i + 1]);
+            }
+            
+            // Draw destination
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(navMeshAgent.destination, 0.2f);
+        }
+        
+        // Draw detection range
+        if (currentState == AIState.Patrol)
+        {
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireSphere(transform.position, detectionRange);
+        }
     }
     
     void OnDestroy()

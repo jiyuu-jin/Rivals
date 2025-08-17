@@ -76,6 +76,16 @@ public class ARNavMeshBuilder : MonoBehaviour
         navMeshSurface.collectObjects = CollectObjects.Children;
         navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
         
+        // Configure build settings for better connectivity
+        var buildSettings = navMeshSurface.GetBuildSettings();
+        buildSettings.agentRadius = 0.3f; // Smaller radius for tighter spaces
+        buildSettings.agentHeight = 1.8f;
+        buildSettings.agentSlope = 45f;
+        buildSettings.agentClimb = 0.4f;
+        buildSettings.minRegionArea = 0.1f; // Smaller regions allowed
+        navMeshSurface.overrideTileSize = true;
+        navMeshSurface.tileSize = 128; // Smaller tiles for better connectivity
+        
         // Subscribe to plane events
         planeManager.planesChanged += OnPlanesChanged;
         
@@ -194,8 +204,8 @@ public class ARNavMeshBuilder : MonoBehaviour
         BoxCollider collider = navMeshObj.AddComponent<BoxCollider>();
         collider.size = Vector3.one;
         
-        // Tag for identification
-        navMeshObj.tag = "NavMeshSurface";
+        // Set layer for NavMesh generation
+        navMeshObj.layer = 0; // Default layer
         
         // Store reference
         navMeshObjects.Add(navMeshObj);
@@ -301,6 +311,13 @@ public class ARNavMeshBuilder : MonoBehaviour
         if (Time.time - lastRebuildTime < rebuildInterval || isRebuilding)
             return;
             
+        StartCoroutine(RebuildNavMeshCoroutine());
+    }
+    
+    // Public method to force rebuild for debugging
+    public void ForceRebuildNavMesh()
+    {
+        Debug.Log("ARNavMeshBuilder: Forcing NavMesh rebuild");
         StartCoroutine(RebuildNavMeshCoroutine());
     }
     

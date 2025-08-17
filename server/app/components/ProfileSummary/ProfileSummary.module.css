@@ -1,0 +1,120 @@
+.container {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  padding: 24px;
+  height: fit-content;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-primary);
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+}
+
+/* Stats Section */
+.statsSection {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeItem {
+  text-align: center;
+  padding-top: 16px;
+}
+
+.timeValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent-primary);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.timeLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Challenges Section */
+.challengesSection {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.challenge {
+  margin-bottom: 8px;
+}
+
+.challengeTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+}
+
+.progressBar {
+  height: 6px !important;
+}
+
+.progressBar :global(.mantine-Progress-bar) {
+  background: var(--gradient-primary);
+}
+
+/* Achievements Section */
+.achievementsSection {
+}
+
+.achievement {
+  gap: 12px;
+  align-items: center;
+}
+
+.achievementIcon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 107, 53, 0.1);
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.achievementText {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}

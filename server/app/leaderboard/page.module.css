@@ -1,0 +1,21 @@
+.main {
+  min-height: calc(100vh - 60px);
+  background: var(--background);
+  padding: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+  .main {
+    padding: 16px;
+    align-items: flex-start;
+  }
+}
