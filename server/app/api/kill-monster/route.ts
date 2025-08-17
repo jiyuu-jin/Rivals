@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { anvil } from "viem/chains";
 import { z } from "zod";
 import * as RivalsToken from "../../../RivalsToken.json";
 import { pg } from "@/app/pg";
+import { getClients } from "@/app/clients";
 
 const schema = z.object({
     username: z.string(),
@@ -30,21 +28,13 @@ export async function POST(request: NextRequest) {
 
     await db`UPDATE users SET kill_count = kill_count + 1, last_active = CURRENT_TIMESTAMP WHERE id = ${userId}`;
 
-    const client = createWalletClient({
-        chain: anvil,
-        transport: http(),
-        account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`),
-    });
-    const publicClient = createPublicClient({
-        chain: anvil,
-        transport: http(),
-    });
+    const { publicClient, walletClient } = getClients();
 
-    const hash = await client.writeContract({
+    const hash = await walletClient.writeContract({
         address: process.env.CONTRACT_ADDRESS as `0x${string}`,
         abi: RivalsToken.abi,
         functionName: "killMonster",
-        args: [address, parseUnits("1", 18)],
+        args: [address],
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
     console.log({ receipt });

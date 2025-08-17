@@ -17,7 +17,7 @@ contract RivalsToken is ERC20 {
 
     function killMonster(address rewardAddress) public {
         require(msg.sender == _owner, "Only owner can call killMonster");
-        _mint(rewardAddress, 1000000000000000000000000);
+        _mint(rewardAddress, 1000000000000000000);
     }
 
     function dieByMonster(address playerAddress) public {

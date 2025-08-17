@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Networking;
 using System;
 
 public class ZombieHealth : MonoBehaviour
@@ -31,6 +32,13 @@ public class ZombieHealth : MonoBehaviour
     
     [Tooltip("Duration of hit flash in seconds")]
     public float hitFlashDuration = 0.2f;
+    
+    [Header("API Settings")]
+    [Tooltip("Server URL for API calls")]
+    public string serverUrl = "http://10.1.9.21:3000";
+    
+    [Tooltip("Player username for API calls")]
+    public string username = "player1";
     
     [HideInInspector]
     public bool isDead = false; // Made public for AI access
@@ -150,6 +158,9 @@ public class ZombieHealth : MonoBehaviour
         // Add to score
         GameScore.AddKill();
         
+        // Call the API to report monster kill
+        StartCoroutine(ReportMonsterKill());
+        
         // Play death sound
         if (audioSource != null && deathSound != null)
         {
@@ -237,6 +248,27 @@ public class ZombieHealth : MonoBehaviour
         if (animator != null)
         {
             animator.SetBool("IsHit", false);
+        }
+    }
+    
+    IEnumerator ReportMonsterKill()
+    {
+        Debug.Log("ZombieHealth: Reporting monster kill to server...");
+        
+        string json_body = $"{{ \"username\": \"{username}\" }}";
+        
+        using (UnityWebRequest www = UnityWebRequest.Post($"{serverUrl}/api/kill-monster", json_body, "application/json"))
+        {
+            yield return www.SendWebRequest();
+            
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"ZombieHealth: Failed to report monster kill: {www.error}");
+            }
+            else
+            {
+                Debug.Log("ZombieHealth: Monster kill reported successfully to server");
+            }
         }
     }
 }

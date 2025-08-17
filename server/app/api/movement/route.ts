@@ -1,8 +1,12 @@
 import { pg } from "@/app/pg";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { formatUnits } from "viem";
+import * as RivalsToken from "../../../RivalsToken.json";
+import { getClients } from "@/app/clients";
 
 const schema = z.object({
+    username: z.string(),
     latitude: z.number(),
     longitude: z.number(),
 });
@@ -18,6 +22,32 @@ export async function POST(request: NextRequest) {
     console.log(movement);
 
     const db = pg();
+    
+    // Get user info and balance
+    let userBalance = "0";
+    const userResults = await db`SELECT id, evm_address FROM users WHERE username = ${movement.username} LIMIT 1`;
+    if (userResults.length > 0) {
+        const userAddress = userResults[0].evm_address as `0x${string}`;
+        
+        // Get balance from smart contract
+        const { publicClient } = getClients();
+        
+        try {
+            const balance = await publicClient.readContract({
+                address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+                abi: RivalsToken.abi,
+                functionName: "balanceOf",
+                args: [userAddress],
+            }) as bigint;
+            
+            // Convert from wei to tokens using viem's formatUnits
+            userBalance = parseFloat(formatUnits(balance, 18)).toFixed(2);
+        } catch (error) {
+            console.error("Error fetching balance:", error);
+            userBalance = "0";
+        }
+    }
+    
     // First, let's get all traps and compute distances to debug
     const allTraps = await db`
         SELECT *, 
@@ -36,5 +66,8 @@ export async function POST(request: NextRequest) {
     `;
     console.log("Traps within threshold: ", JSON.stringify(traps));
 
-    return NextResponse.json({ traps });
+    return NextResponse.json({ 
+        traps,
+        balance: userBalance 
+    });
 }

@@ -14,6 +14,9 @@ public class LocationMonitor : MonoBehaviour
     ObjectSpawner m_ObjectSpawner;
 
     Dictionary<int, GameObject> spawnedTrapObjects = new Dictionary<int, GameObject>();
+    
+    // UI Components for balance display
+    private string currentBalance = "0.00";
 
     void Start()
     {
@@ -80,7 +83,7 @@ public class LocationMonitor : MonoBehaviour
                 // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
                 Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
-                string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
+                string json_body = "{ \"username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
                 using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/movement", json_body, "application/json"))
                 {
                     yield return www.SendWebRequest();
@@ -91,8 +94,12 @@ public class LocationMonitor : MonoBehaviour
                     }
                     else
                     {
-                        Traps traps = JsonUtility.FromJson<Traps>(www.downloadHandler.text);
-                        foreach (Trap trap in traps.traps)
+                        MovementResponse response = JsonUtility.FromJson<MovementResponse>(www.downloadHandler.text);
+                        
+                        // Update balance display
+                        UpdateBalanceDisplay(response.balance);
+                        
+                        foreach (Trap trap in response.traps)
                         {
                             // Check if we already have this trap object spawned
                             if (!spawnedTrapObjects.ContainsKey(trap.id))
@@ -326,6 +333,32 @@ public class LocationMonitor : MonoBehaviour
         
         Debug.Log($"Refreshed trap objects: {spawnedTrapObjects.Count} traps registered");
     }
+    
+    void UpdateBalanceDisplay(string balance)
+    {
+        currentBalance = balance;
+        Debug.Log($"Balance updated: {balance} tokens");
+    }
+    
+    void OnGUI()
+    {
+        // Display balance in top-right corner
+        GUILayout.BeginArea(new Rect(Screen.width - 200, 10, 190, 60));
+        GUILayout.BeginVertical("box");
+        
+        GUILayout.Label($"💰 Balance: {currentBalance}", GUILayout.Height(25));
+        GUILayout.Label("Rivals Tokens", GUILayout.Height(20));
+        
+        GUILayout.EndVertical();
+        GUILayout.EndArea();
+    }
+}
+
+[Serializable]
+public class MovementResponse
+{
+    [SerializeField] public List<Trap> traps;
+    [SerializeField] public string balance;
 }
 
 [Serializable]

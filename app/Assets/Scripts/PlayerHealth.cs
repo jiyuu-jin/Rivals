@@ -1,5 +1,7 @@
 using UnityEngine;
+using UnityEngine.Networking;
 using System;
+using System.Collections;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -27,6 +29,13 @@ public class PlayerHealth : MonoBehaviour
     [Tooltip("Sound when player dies")]
     public AudioClip deathSound;
     
+    [Header("API Settings")]
+    [Tooltip("Server URL for API calls")]
+    public string serverUrl = "http://10.1.9.21:3000";
+    
+    [Tooltip("Player username for API calls")]
+    public string username = "player1";
+    
     // Events
     public event Action<int> OnHealthChanged;
     public event Action OnPlayerDeath;
@@ -38,6 +47,7 @@ public class PlayerHealth : MonoBehaviour
     
     // State
     public bool IsDead { get; private set; } = false;
+    private int causingTrapId = -1; // Track which trap caused death, -1 means no trap
     
     void Start()
     {
@@ -123,6 +133,19 @@ public class PlayerHealth : MonoBehaviour
         }
     }
     
+    public void TakeDamageFromTrap(int damage, int trapId)
+    {
+        if (IsDead) return;
+        
+        Debug.Log($"PlayerHealth: Taking {damage} damage from trap {trapId}");
+        
+        // Store the trap that caused this damage
+        causingTrapId = trapId;
+        
+        // Use regular damage method
+        TakeDamage(damage);
+    }
+    
     public void Heal(int healAmount)
     {
         if (IsDead) return;
@@ -178,6 +201,9 @@ public class PlayerHealth : MonoBehaviour
         
         Debug.Log("PlayerHealth: Player died!");
         
+        // Call the API to report death
+        StartCoroutine(ReportDeath());
+        
         // Play death sound
         if (audioSource != null && deathSound != null)
         {
@@ -216,6 +242,42 @@ public class PlayerHealth : MonoBehaviour
         // - Game over UI
         // - Restart button
         // - Score display
+    }
+    
+    IEnumerator ReportDeath()
+    {
+        Debug.Log("PlayerHealth: Reporting death to server...");
+        
+        string json_body;
+        if (causingTrapId > 0)
+        {
+            // Death caused by trap
+            json_body = $"{{ \"username\": \"{username}\", \"trapId\": {causingTrapId} }}";
+            Debug.Log($"PlayerHealth: Reporting death by trap {causingTrapId}");
+        }
+        else
+        {
+            // Death caused by monster
+            json_body = $"{{ \"username\": \"{username}\" }}";
+            Debug.Log("PlayerHealth: Reporting death by monster");
+        }
+        
+        using (UnityWebRequest www = UnityWebRequest.Post($"{serverUrl}/api/die", json_body, "application/json"))
+        {
+            yield return www.SendWebRequest();
+            
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError($"PlayerHealth: Failed to report death: {www.error}");
+            }
+            else
+            {
+                Debug.Log("PlayerHealth: Death reported successfully to server");
+            }
+        }
+        
+        // Reset trap ID for next death
+        causingTrapId = -1;
     }
     
     public void Respawn()
