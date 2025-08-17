@@ -342,12 +342,20 @@ public class LocationMonitor : MonoBehaviour
     
     void OnGUI()
     {
-        // Display balance in top-right corner
-        GUILayout.BeginArea(new Rect(Screen.width - 200, 10, 190, 60));
+        // Create larger font styles - doubled again
+        GUIStyle balanceStyle = new GUIStyle(GUI.skin.label);
+        balanceStyle.fontSize = 48;
+        balanceStyle.fontStyle = FontStyle.Bold;
+        
+        GUIStyle subTextStyle = new GUIStyle(GUI.skin.label);
+        subTextStyle.fontSize = 36;
+        
+        // Display balance in top-right corner - positioned to match health bar height
+        GUILayout.BeginArea(new Rect(Screen.width - 500, 80, 480, 140));
         GUILayout.BeginVertical("box");
         
-        GUILayout.Label($"💰 Balance: {currentBalance}", GUILayout.Height(25));
-        GUILayout.Label("Rivals Tokens", GUILayout.Height(20));
+        GUILayout.Label($"{currentBalance} RIVAL", balanceStyle, GUILayout.Height(90));
+        GUILayout.Label("Balance", subTextStyle, GUILayout.Height(40));
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
