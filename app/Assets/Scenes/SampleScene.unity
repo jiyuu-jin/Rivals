@@ -2481,6 +2481,8 @@ MonoBehaviour:
   deathSound: {fileID: 0}
   serverUrl: https://rivals.nyc
   username: player1
+  serverUrl: http://10.1.9.21:3000
+  username: player1
 --- !u!1001 &805527811
 PrefabInstance:
   m_ObjectHideFlags: 0
