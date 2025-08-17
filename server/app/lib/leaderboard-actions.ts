@@ -5,7 +5,7 @@ import { getClientsByChainId, SupportedChainId } from '@/app/clients';
 import { getContractAddress } from '@/app/lib/chains';
 import { createPublicClient, http, formatUnits } from 'viem';
 import { flowTestnet, chilizSpicy, anvil } from '@/app/lib/chains';
-import * as RivalsToken from '../../RivalsToken.json';
+import RivalsToken from '../../RivalsToken.json';
 
 export interface LeaderboardEntry {
   rank: number;

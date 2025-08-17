@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import * as RivalsToken from "../../../RivalsToken.json";
+import RivalsToken from "../../../RivalsToken.json";
 import { pg } from "@/app/pg";
 import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 

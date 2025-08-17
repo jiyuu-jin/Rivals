@@ -2,7 +2,7 @@ import { pg } from "@/app/pg";
 import { NextRequest, NextResponse } from "next/server";
 import { parseUnits } from "viem";
 import { z } from "zod";
-import * as RivalsToken from "../../../RivalsToken.json";
+import RivalsToken from "../../../RivalsToken.json";
 import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 
 const trapSchema = z.object({

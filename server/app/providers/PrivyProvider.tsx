@@ -26,7 +26,7 @@ export function PrivyProvider({ children }: PrivyProviderProps) {
         embeddedWallets: {
           createOnLogin: 'users-without-wallets',
         },
-        supportedChains: supportedChains,
+        supportedChains: [...supportedChains],
       }}
     >
       <QueryClientProvider client={queryClient}>
