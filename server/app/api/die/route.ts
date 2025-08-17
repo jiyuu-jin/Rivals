@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
     const address = results[0].evm_address;
 
-    const { publicClient, walletClient } = getClientsByChainId(movement.chainId);
+    const { publicClient, walletClient, contractAddress } = getClientsByChainId(movement.chainId);
 
     if (movement.trapId) {
         const results = await db`SELECT owner FROM traps WHERE id = ${movement.trapId} LIMIT 1`;
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
         const otherUser = await db`SELECT id, evm_address FROM users WHERE id = ${otherUserId} LIMIT 1`;
         await db`DELETE FROM traps WHERE id = ${movement.trapId}`;
         const hash = await walletClient.writeContract({
-            address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+            address: contractAddress as `0x${string}`,
             abi: RivalsToken.abi,
             functionName: "dieByTrap",
             args: [address, otherUser[0].evm_address],
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         }
     } else {
         const hash = await walletClient.writeContract({
-            address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+            address: contractAddress as `0x${string}`,
             abi: RivalsToken.abi,
             functionName: "dieByMonster",
             args: [address],

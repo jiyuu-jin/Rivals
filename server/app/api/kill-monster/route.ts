@@ -29,10 +29,10 @@ export async function POST(request: NextRequest) {
 
     await db`UPDATE users SET kill_count = kill_count + 1, last_active = CURRENT_TIMESTAMP WHERE id = ${userId}`;
 
-    const { publicClient, walletClient } = getClientsByChainId(parsed.data.chainId);
+    const { publicClient, walletClient, contractAddress } = getClientsByChainId(parsed.data.chainId);
 
     const hash = await walletClient.writeContract({
-        address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+        address: contractAddress as `0x${string}`,
         abi: RivalsToken.abi,
         functionName: "killMonster",
         args: [address],

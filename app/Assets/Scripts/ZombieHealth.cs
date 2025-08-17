@@ -255,7 +255,24 @@ public class ZombieHealth : MonoBehaviour
     {
         Debug.Log("ZombieHealth: Reporting monster kill to server...");
         
-        string json_body = $"{{ \"username\": \"{username}\" }}";
+        // Get current chain from LocationMonitor
+        LocationMonitor locationMonitor = FindFirstObjectByType<LocationMonitor>();
+        string currentChain = "anvil"; // fallback
+        if (locationMonitor != null)
+        {
+            // Access the current chain via reflection or make it public
+            System.Reflection.FieldInfo chainField = typeof(LocationMonitor).GetField("availableChains", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            System.Reflection.FieldInfo indexField = typeof(LocationMonitor).GetField("currentChainIndex", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (chainField != null && indexField != null)
+            {
+                string[] chains = (string[])chainField.GetValue(locationMonitor);
+                int index = (int)indexField.GetValue(locationMonitor);
+                currentChain = chains[index];
+            }
+        }
+        
+        string json_body = $"{{ \"username\": \"{username}\", \"chainId\": \"{currentChain}\" }}";
         
         using (UnityWebRequest www = UnityWebRequest.Post($"{serverUrl}/api/kill-monster", json_body, "application/json"))
         {

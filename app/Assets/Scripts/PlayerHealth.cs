@@ -248,18 +248,35 @@ public class PlayerHealth : MonoBehaviour
     {
         Debug.Log("PlayerHealth: Reporting death to server...");
         
+        // Get current chain from LocationMonitor
+        LocationMonitor locationMonitor = FindFirstObjectByType<LocationMonitor>();
+        string currentChain = "anvil"; // fallback
+        if (locationMonitor != null)
+        {
+            // Access the current chain via reflection or make it public
+            System.Reflection.FieldInfo chainField = typeof(LocationMonitor).GetField("availableChains", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            System.Reflection.FieldInfo indexField = typeof(LocationMonitor).GetField("currentChainIndex", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            
+            if (chainField != null && indexField != null)
+            {
+                string[] chains = (string[])chainField.GetValue(locationMonitor);
+                int index = (int)indexField.GetValue(locationMonitor);
+                currentChain = chains[index];
+            }
+        }
+        
         string json_body;
         if (causingTrapId > 0)
         {
             // Death caused by trap
-            json_body = $"{{ \"username\": \"{username}\", \"trapId\": {causingTrapId} }}";
-            Debug.Log($"PlayerHealth: Reporting death by trap {causingTrapId}");
+            json_body = $"{{ \"username\": \"{username}\", \"trapId\": {causingTrapId}, \"chainId\": \"{currentChain}\" }}";
+            Debug.Log($"PlayerHealth: Reporting death by trap {causingTrapId} on {currentChain}");
         }
         else
         {
             // Death caused by monster
-            json_body = $"{{ \"username\": \"{username}\" }}";
-            Debug.Log("PlayerHealth: Reporting death by monster");
+            json_body = $"{{ \"username\": \"{username}\", \"chainId\": \"{currentChain}\" }}";
+            Debug.Log($"PlayerHealth: Reporting death by monster on {currentChain}");
         }
         
         using (UnityWebRequest www = UnityWebRequest.Post($"{serverUrl}/api/die", json_body, "application/json"))

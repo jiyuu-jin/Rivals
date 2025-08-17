@@ -31,11 +31,11 @@ export async function POST(request: NextRequest) {
         const userAddress = userResults[0].evm_address as `0x${string}`;
         
         // Get balance from smart contract
-        const { publicClient } = getClientsByChainId(movement.chainId);
+        const { publicClient, contractAddress } = getClientsByChainId(movement.chainId);
         
         try {
             const balance = await publicClient.readContract({
-                address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+                address: contractAddress as `0x${string}`,
                 abi: RivalsToken.abi,
                 functionName: "balanceOf",
                 args: [userAddress],

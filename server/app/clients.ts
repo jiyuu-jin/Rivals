@@ -2,6 +2,35 @@ import { Chain, createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { anvil, chiliz, flowMainnet, flowTestnet, spicy } from "viem/chains";
 
+// Chain configuration with separate contract addresses and private keys
+export const CHAIN_CONFIG = {
+    anvil: {
+        chain: anvil,
+        contractAddress: process.env.ANVIL_CONTRACT_ADDRESS || process.env.CONTRACT_ADDRESS,
+        privateKey: process.env.ANVIL_PRIVATE_KEY || process.env.PRIVATE_KEY,
+    },
+    flow_mainnet: {
+        chain: flowMainnet,
+        contractAddress: process.env.FLOW_MAINNET_CONTRACT_ADDRESS,
+        privateKey: process.env.FLOW_MAINNET_PRIVATE_KEY,
+    },
+    flow_testnet: {
+        chain: flowTestnet,
+        contractAddress: process.env.FLOW_TESTNET_CONTRACT_ADDRESS,
+        privateKey: process.env.FLOW_TESTNET_PRIVATE_KEY,
+    },
+    chiliz_mainnet: {
+        chain: chiliz,
+        contractAddress: process.env.CHILIZ_MAINNET_CONTRACT_ADDRESS,
+        privateKey: process.env.CHILIZ_MAINNET_PRIVATE_KEY,
+    },
+    chiliz_testnet: {
+        chain: spicy,
+        contractAddress: process.env.CHILIZ_TESTNET_CONTRACT_ADDRESS,
+        privateKey: process.env.CHILIZ_TESTNET_PRIVATE_KEY,
+    },
+} as const;
+
 // Default chain based on environment variables (for backward compatibility)
 let defaultChain: Chain;
 if (process.env.CHAIN_FLOW_MAINNET === "true") {
@@ -16,16 +45,7 @@ if (process.env.CHAIN_FLOW_MAINNET === "true") {
     defaultChain = anvil;
 }
 
-// Chain mapping for dynamic selection
-export const SUPPORTED_CHAINS = {
-    anvil: anvil,
-    flow_mainnet: flowMainnet,
-    flow_testnet: flowTestnet,
-    chiliz_mainnet: chiliz,
-    chiliz_testnet: spicy,
-} as const;
-
-export type SupportedChainId = keyof typeof SUPPORTED_CHAINS;
+export type SupportedChainId = keyof typeof CHAIN_CONFIG;
 
 // Original function for backward compatibility
 export function getClients() {
@@ -33,7 +53,7 @@ export function getClients() {
 }
 
 // New function that accepts dynamic chain selection
-export function getClientsForChain(chain: Chain) {
+export function getClientsForChain(chain: Chain, privateKey?: string) {
     return {
         publicClient: createPublicClient({
             chain,
@@ -42,13 +62,16 @@ export function getClientsForChain(chain: Chain) {
         walletClient: createWalletClient({
             chain,
             transport: http(),
-            account: privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`),
+            account: privateKeyToAccount((privateKey || process.env.PRIVATE_KEY) as `0x${string}`),
         }),
     }
 }
 
-// Helper function to get clients by chain ID
+// Helper function to get clients by chain ID with proper config
 export function getClientsByChainId(chainId?: SupportedChainId) {
-    const chain = chainId ? SUPPORTED_CHAINS[chainId] : defaultChain;
-    return getClientsForChain(chain);
+    const config = chainId ? CHAIN_CONFIG[chainId] : CHAIN_CONFIG.anvil;
+    return {
+        ...getClientsForChain(config.chain, config.privateKey),
+        contractAddress: config.contractAddress,
+    };
 }

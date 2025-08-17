@@ -30,9 +30,9 @@ export async function POST(request: NextRequest) {
     }
     const address = results[0].evm_address as `0x${string}`;
 
-    const { publicClient, walletClient } = getClientsByChainId(chainId);
+    const { publicClient, walletClient, contractAddress } = getClientsByChainId(chainId);
     const balance = await publicClient.readContract({
-      address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+      address: contractAddress as `0x${string}`,
       abi: RivalsToken.abi,
       functionName: "balanceOf",
       args: [address],
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const hash = await walletClient.writeContract({
-      address: process.env.CONTRACT_ADDRESS as `0x${string}`,
+      address: contractAddress as `0x${string}`,
       abi: RivalsToken.abi,
       functionName: "spend",
       args: [address, parseUnits("1", 18)],

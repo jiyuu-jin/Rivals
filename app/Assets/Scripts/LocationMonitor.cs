@@ -17,6 +17,11 @@ public class LocationMonitor : MonoBehaviour
     
     // UI Components for balance display
     private string currentBalance = "0.00";
+    
+    // Chain switching
+    private string[] availableChains = { "anvil", "flow_mainnet", "chiliz_mainnet" };
+    private int currentChainIndex = 0;
+    private string currentChain => availableChains[currentChainIndex];
 
     void Start()
     {
@@ -83,7 +88,7 @@ public class LocationMonitor : MonoBehaviour
                 // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
                 Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
-                string json_body = "{ \"username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
+                string json_body = "{ \"username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
                 using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/movement", json_body, "application/json"))
                 {
                     yield return www.SendWebRequest();
@@ -180,7 +185,7 @@ public class LocationMonitor : MonoBehaviour
         // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
         Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
-        string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + " }";
+        string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
         using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/place-trap", json_body, "application/json"))
         {
             yield return www.SendWebRequest();
@@ -337,7 +342,16 @@ public class LocationMonitor : MonoBehaviour
     void UpdateBalanceDisplay(string balance)
     {
         currentBalance = balance;
-        Debug.Log($"Balance updated: {balance} tokens");
+        Debug.Log($"Balance updated: {balance} tokens on {currentChain}");
+    }
+    
+    void ToggleChain()
+    {
+        currentChainIndex = (currentChainIndex + 1) % availableChains.Length;
+        Debug.Log($"Switched to chain: {currentChain}");
+        
+        // Reset balance when switching chains since it will be different
+        currentBalance = "0.00";
     }
     
     void OnGUI()
@@ -351,11 +365,19 @@ public class LocationMonitor : MonoBehaviour
         subTextStyle.fontSize = 36;
         
         // Display balance in top-right corner - positioned to match health bar height
-        GUILayout.BeginArea(new Rect(Screen.width - 500, 80, 480, 140));
+        GUILayout.BeginArea(new Rect(Screen.width - 500, 80, 480, 180));
         GUILayout.BeginVertical("box");
         
-        GUILayout.Label($"{currentBalance} RIVAL", balanceStyle, GUILayout.Height(90));
-        GUILayout.Label("Balance", subTextStyle, GUILayout.Height(40));
+        GUILayout.Label($"{currentBalance} RIVAL", balanceStyle, GUILayout.Height(70));
+        GUILayout.Label($"Chain: {currentChain}", subTextStyle, GUILayout.Height(30));
+        
+        // Chain toggle button
+        GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
+        buttonStyle.fontSize = 16;
+        if (GUILayout.Button("Switch Chain", buttonStyle, GUILayout.Height(40)))
+        {
+            ToggleChain();
+        }
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
