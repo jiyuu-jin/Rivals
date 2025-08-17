@@ -3,6 +3,8 @@
 import { Group, UnstyledButton } from '@mantine/core';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { WalletConnect } from '../WalletConnect';
+import { ChainSwitcher } from '../ChainSwitcher';
 import styles from './Navigation.module.css';
 
 interface NavItem {
@@ -26,27 +28,31 @@ export function Navigation() {
       <Group className={styles.navGroup}>
         <Group className={styles.leftNav}>
           {navItems.slice(0, 3).map((item) => (
-            <Link key={item.label} href={item.href} passHref legacyBehavior>
-              <UnstyledButton 
-                component="a"
-                className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
-              >
-                {item.label}
-              </UnstyledButton>
-            </Link>
+            <UnstyledButton 
+              key={item.label}
+              component={Link}
+              href={item.href}
+              className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
+            >
+              {item.label}
+            </UnstyledButton>
           ))}
         </Group>
         <Group className={styles.rightNav}>
           {navItems.slice(3).map((item) => (
-            <Link key={item.label} href={item.href} passHref legacyBehavior>
-              <UnstyledButton 
-                component="a"
-                className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
-              >
-                {item.label}
-              </UnstyledButton>
-            </Link>
+            <UnstyledButton 
+              key={item.label}
+              component={Link}
+              href={item.href}
+              className={`${styles.navItem} ${pathname === item.href ? styles.active : ''}`}
+            >
+              {item.label}
+            </UnstyledButton>
           ))}
+          <div className={styles.walletSection}>
+            <ChainSwitcher />
+            <WalletConnect />
+          </div>
         </Group>
       </Group>
     </nav>

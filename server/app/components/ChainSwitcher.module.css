@@ -1,0 +1,44 @@
+.container {
+  position: relative;
+}
+
+.select {
+  min-width: 160px;
+}
+
+.select :global(.mantine-Select-input) {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--accent-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.select :global(.mantine-Select-input:focus) {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2);
+}
+
+.faucetInfo {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+.faucetText {
+  color: var(--text-secondary);
+}
+
+.faucetLink {
+  color: var(--accent-primary);
+  text-decoration: none;
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.faucetLink:hover {
+  text-decoration: underline;
+}

@@ -1,0 +1,37 @@
+.connectButton {
+  background: transparent;
+  border: 2px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  height: auto;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  border-radius: 8px;
+}
+
+.connectButton:hover {
+  background: var(--accent-primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 68, 68, 0.3);
+}
+
+.connectedButton {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  font-weight: 500;
+  font-size: 14px;
+  padding: 8px 16px;
+  height: auto;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+}
+
+.connectedButton:hover {
+  background: rgba(255, 68, 68, 0.2);
+  transform: translateY(-1px);
+}

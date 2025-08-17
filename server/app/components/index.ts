@@ -3,3 +3,5 @@ export { PlayerProfile } from './PlayerProfile/PlayerProfile';
 export { Leaderboard } from './Leaderboard/Leaderboard';
 export { ProfileSummary } from './ProfileSummary/ProfileSummary';
 export { ComingSoon } from './ComingSoon/ComingSoon';
+export { WalletConnect } from './WalletConnect';
+export { ChainSwitcher } from './ChainSwitcher';

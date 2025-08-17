@@ -17,10 +17,17 @@
   z-index: 2;
 }
 
-.skullIcon {
+.logoIcon {
   margin-bottom: 32px;
   filter: drop-shadow(0 0 30px rgba(255, 68, 68, 0.6));
   animation: float 3s ease-in-out infinite;
+}
+
+.logoImage {
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent-primary);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.3);
 }
 
 @keyframes float {

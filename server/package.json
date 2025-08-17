@@ -13,11 +13,15 @@
     "@emotion/server": "^11.11.0",
     "@mantine/core": "^8.2.5",
     "@mantine/hooks": "^8.2.5",
+    "@privy-io/react-auth": "^2.21.3",
+    "@privy-io/wagmi": "^1.0.6",
+    "@tanstack/react-query": "^5.85.3",
     "next": "15.4.6",
     "postgres": "^3.4.7",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "viem": "^2.33.3",
+    "wagmi": "^2.16.3",
     "zod": "^4.0.17"
   },
   "devDependencies": {
