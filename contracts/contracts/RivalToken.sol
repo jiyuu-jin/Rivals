@@ -10,8 +10,27 @@ contract RivalToken is ERC20 {
         _owner = owner;
     }
 
-    function killMonster(address rewardAddress, uint256 amount) public {
-        require(msg.sender == _owner, "Only owner can reward for killing monsters");
-        _mint(rewardAddress, amount);
+    function spend(address playerAddress, uint256 amount) public {
+        require(msg.sender == _owner, "Only owner can call spend");
+        _burn(playerAddress, amount);
+    }
+
+    function killMonster(address rewardAddress) public {
+        require(msg.sender == _owner, "Only owner can call killMonster");
+        _mint(rewardAddress, 1000000000000000000000000);
+    }
+
+    function dieByMonster(address playerAddress) public {
+        require(msg.sender == _owner, "Only owner can call dieByMonster");
+        uint256 playerBalance = balanceOf(playerAddress);
+        uint256 amountToBurn = (playerBalance * 20) / 100; // 20% of player's balance
+        _burn(playerAddress, amountToBurn);
+    }
+
+    function dieByTrap(address playerAddress, address trapOwner) public {
+        require(msg.sender == _owner, "Only owner can call dieByTrap");
+        uint256 playerBalance = balanceOf(playerAddress);
+        uint256 amountToTransfer = (playerBalance * 20) / 100; // 20% of player's balance
+        _transfer(playerAddress, trapOwner, amountToTransfer);
     }
 }
