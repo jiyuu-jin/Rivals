@@ -11,14 +11,15 @@
   "dependencies": {
     "next": "15.4.6",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "postgres": "^3.4.7",
+    "viem": "^2.33.3",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postgres": "^3.4.7",
-    "typescript": "^5",
-    "zod": "^4.0.17"
+    "typescript": "^5"
   }
 }

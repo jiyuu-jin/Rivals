@@ -3,10 +3,15 @@ CREATE EXTENSION earthdistance;
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  username VARCHAR(255) NOT NULL
+  username VARCHAR(255) NOT NULL,
+  evm_address VARCHAR(255) NOT NULL,
+  kill_count INTEGER NOT NULL DEFAULT 0,
+  last_active TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO users (username) VALUES ('player1'), ('player2');
+INSERT INTO users (username, evm_address) VALUES
+  ('player1', '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'),
+  ('player2', '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC');
 
 CREATE TABLE traps (
   id SERIAL PRIMARY KEY,
