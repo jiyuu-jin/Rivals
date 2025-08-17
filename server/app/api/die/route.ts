@@ -3,7 +3,7 @@ import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { anvil } from "viem/chains";
 import { z } from "zod";
-import * as RivalToken from "../../../RivalToken.json";
+import * as RivalsToken from "../../../RivalsToken.json";
 import { pg } from "@/app/pg";
 import { getClients } from "@/app/clients";
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         await db`DELETE FROM traps WHERE id = ${movement.trapId}`;
         const hash = await walletClient.writeContract({
             address: process.env.CONTRACT_ADDRESS as `0x${string}`,
-            abi: RivalToken.abi,
+            abi: RivalsToken.abi,
             functionName: "dieByTrap",
             args: [address, otherUser[0].evm_address],
         });
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     } else {
         const hash = await walletClient.writeContract({
             address: process.env.CONTRACT_ADDRESS as `0x${string}`,
-            abi: RivalToken.abi,
+            abi: RivalsToken.abi,
             functionName: "dieByMonster",
             args: [address],
         });

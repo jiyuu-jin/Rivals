@@ -8,9 +8,23 @@ docker run -it --rm -e POSTGRES_PASSWORD=password -p 127.0.0.1:5432:5432 -v $PWD
 cd server && npm run dev
 ```
 
+### Deploy to local testnet
+
 ```bash
 cd contracts
-forge c --private-key=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast contracts/RivalToken.sol:RivalToken --constructor-args 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 && cp out/RivalToken.sol/RivalToken.json ../server/RivalToken.json
+forge c --private-key=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast contracts/RivalsToken.sol:RivalsToken --constructor-args 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 && cp out/RivalsToken.sol/RivalsToken.json ../server/RivalsToken.json
+```
+
+### Deploy to Flow testnet
+
+```bash
+cd contracts
+forge c --private-key=<owner-key> -r "https://testnet.evm.nodes.onflow.org" --broadcast contracts/RivalsToken.sol:RivalsToken --constructor-args <owner-addr> && cp out/RivalsToken.sol/RivalsToken.json ../server/RivalsToken.json
+forge verify-contract \
+  --rpc-url https://testnet.evm.nodes.onflow.org/ \
+  --verifier blockscout \
+  --verifier-url 'https://evm-testnet.flowscan.io/api/' \
+  <contract-addr> contracts/RivalsToken.sol:RivalsToken
 ```
 
 ### Get `$RIVAL` token balance

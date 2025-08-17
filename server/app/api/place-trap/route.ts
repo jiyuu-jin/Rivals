@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
 import { anvil } from "viem/chains";
 import { z } from "zod";
-import * as RivalToken from "../../../RivalToken.json";
+import * as RivalsToken from "../../../RivalsToken.json";
 import { privateKeyToAccount } from "viem/accounts";
 import { getClients } from "@/app/clients";
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     const { publicClient, walletClient } = getClients();
     const balance = await publicClient.readContract({
       address: process.env.CONTRACT_ADDRESS as `0x${string}`,
-      abi: RivalToken.abi,
+      abi: RivalsToken.abi,
       functionName: "balanceOf",
       args: [address],
     }) as bigint;
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const hash = await walletClient.writeContract({
       address: process.env.CONTRACT_ADDRESS as `0x${string}`,
-      abi: RivalToken.abi,
+      abi: RivalsToken.abi,
       functionName: "spend",
       args: [address, parseUnits("1", 18)],
     });
