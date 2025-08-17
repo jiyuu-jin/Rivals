@@ -1,16 +1,15 @@
 import { pg } from "@/app/pg";
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
-import { anvil } from "viem/chains";
+import { parseUnits } from "viem";
 import { z } from "zod";
 import * as RivalsToken from "../../../RivalsToken.json";
-import { privateKeyToAccount } from "viem/accounts";
-import { getClients } from "@/app/clients";
+import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 
 const trapSchema = z.object({
   owner_username: z.string(),
   latitude: z.number(),
   longitude: z.number(),
+  chainId: z.string().optional() as z.ZodOptional<z.ZodType<SupportedChainId>>,
 });
 
 export async function POST(request: NextRequest) {
@@ -22,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.message }, { status: 400 });
     }
 
-    const { owner_username, latitude, longitude } = parsed.data;
+    const { owner_username, latitude, longitude, chainId } = parsed.data;
 
     const db = pg();
     const results = await db`SELECT id, evm_address FROM users WHERE username = ${owner_username} LIMIT 1`;
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
     const address = results[0].evm_address as `0x${string}`;
 
-    const { publicClient, walletClient } = getClients();
+    const { publicClient, walletClient } = getClientsByChainId(chainId);
     const balance = await publicClient.readContract({
       address: process.env.CONTRACT_ADDRESS as `0x${string}`,
       abi: RivalsToken.abi,

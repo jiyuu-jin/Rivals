@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import * as RivalsToken from "../../../RivalsToken.json";
 import { pg } from "@/app/pg";
-import { getClients } from "@/app/clients";
+import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 
 const schema = z.object({
     username: z.string(),
+    chainId: z.string().optional() as z.ZodOptional<z.ZodType<SupportedChainId>>,
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     await db`UPDATE users SET kill_count = kill_count + 1, last_active = CURRENT_TIMESTAMP WHERE id = ${userId}`;
 
-    const { publicClient, walletClient } = getClients();
+    const { publicClient, walletClient } = getClientsByChainId(parsed.data.chainId);
 
     const hash = await walletClient.writeContract({
         address: process.env.CONTRACT_ADDRESS as `0x${string}`,

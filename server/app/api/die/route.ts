@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, createWalletClient, http, parseUnits } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { anvil } from "viem/chains";
 import { z } from "zod";
 import * as RivalsToken from "../../../RivalsToken.json";
 import { pg } from "@/app/pg";
-import { getClients } from "@/app/clients";
+import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 
 const schema = z.object({
     username: z.string(),
     trapId: z.number().optional(),
+    chainId: z.string().optional() as z.ZodOptional<z.ZodType<SupportedChainId>>,
 });
 
 export async function POST(request: NextRequest) {
@@ -28,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
     const address = results[0].evm_address;
 
-    const { publicClient, walletClient } = getClients();
+    const { publicClient, walletClient } = getClientsByChainId(movement.chainId);
 
     if (movement.trapId) {
         const results = await db`SELECT owner FROM traps WHERE id = ${movement.trapId} LIMIT 1`;

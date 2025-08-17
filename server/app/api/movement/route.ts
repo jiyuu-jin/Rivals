@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { formatUnits } from "viem";
 import * as RivalsToken from "../../../RivalsToken.json";
-import { getClients } from "@/app/clients";
+import { getClientsByChainId, SupportedChainId } from "@/app/clients";
 
 const schema = z.object({
     username: z.string(),
     latitude: z.number(),
     longitude: z.number(),
+    chainId: z.string().optional() as z.ZodOptional<z.ZodType<SupportedChainId>>,
 });
 
 export async function POST(request: NextRequest) {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
         const userAddress = userResults[0].evm_address as `0x${string}`;
         
         // Get balance from smart contract
-        const { publicClient } = getClients();
+        const { publicClient } = getClientsByChainId(movement.chainId);
         
         try {
             const balance = await publicClient.readContract({
