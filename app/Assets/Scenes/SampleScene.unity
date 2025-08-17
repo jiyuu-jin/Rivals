@@ -813,6 +813,52 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 331264285}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &329863535
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 329863537}
+  - component: {fileID: 329863536}
+  m_Layer: 0
+  m_Name: MinePlacementDebugger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &329863536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 329863535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 17966068b59684b11b657e05046c781e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinePlacementDebugger
+  enableDetailedLogging: 1
+  testPlacementOnStart: 0
+--- !u!4 &329863537
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 329863535}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1130.1666, y: 840, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &331264285
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1008,6 +1054,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 332374253}
   m_CullTransparentMesh: 1
+--- !u!1 &374782151
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 374782153}
+  - component: {fileID: 374782152}
+  m_Layer: 0
+  m_Name: ModeIndicatorUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &374782152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374782151}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c5d1a640c10a4041945aecb6db3799c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ModeIndicatorUI
+  modeText: {fileID: 0}
+  instructionText: {fileID: 0}
+  autoCreateUI: 1
+  topMargin: 100
+  modeFontSize: 24
+  instructionFontSize: 18
+--- !u!4 &374782153
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374782151}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1130.1666, y: 840, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &425410336
 GameObject:
   m_ObjectHideFlags: 0
@@ -1164,7 +1260,7 @@ MonoBehaviour:
   - {fileID: 1646946700311360, guid: abbab26d658871944a20071c62234860, type: 3}
   m_SpawnVisualizationPrefab: {fileID: 0}
   m_SpawnOptionIndex: 0
-  m_OnlySpawnInView: 1
+  m_OnlySpawnInView: 0
   m_ViewportPeriphery: 0
   m_ApplyRandomAngleAtSpawn: 1
   m_SpawnAngleRange: 45
@@ -1199,7 +1295,7 @@ MonoBehaviour:
   m_ARInteractor: {fileID: 331264286}
   m_ObjectSpawner: {fileID: 436358033}
   m_RequireHorizontalUpSurface: 0
-  m_SpawnTriggerType: 0
+  m_SpawnTriggerType: 1
   m_SpawnObjectInput:
     m_InputSourceMode: 2
     m_InputActionPerformed:
@@ -1600,7 +1696,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 79f4d711fbe79427b8ea8e4ec5ddcc73,
+      objectReference: {fileID: 21300000, guid: 248883b24fea541afb145404311ccfc4,
         type: 3}
     - target: {fileID: 2941317804501384629, guid: 063cc896506b947c7b2c2ae3beb5868f,
         type: 3}
@@ -2042,6 +2138,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 638835486}
   m_CullTransparentMesh: 1
+--- !u!1 &647657696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 647657698}
+  - component: {fileID: 647657697}
+  m_Layer: 0
+  m_Name: MinePlacementHandler
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &647657697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 647657696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c74b88dfbbc94ef5ad18929e99c749f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MinePlacementHandler
+  objectSpawner: {fileID: 436358033}
+  raycastManager: {fileID: 1976924002}
+  requireHorizontalSurface: 1
+  enableDebugLogs: 1
+--- !u!4 &647657698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 647657696}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1130.1666, y: 840, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &702413256
 GameObject:
   m_ObjectHideFlags: 0
@@ -5081,6 +5225,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1624105739}
   - component: {fileID: 1624105738}
+  - component: {fileID: 1624105740}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -5102,6 +5247,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
   continueButton: {fileID: 0}
   zombieSpawner: {fileID: 0}
+  goalManager: {fileID: 0}
 --- !u!4 &1624105739
 Transform:
   m_ObjectHideFlags: 0
@@ -5117,6 +5263,59 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1624105740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1624105737}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f708c04c3dca17f4dbdc065df6a0c397, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ARTemplateMenuManager
+  m_CreateButton: {fileID: 1059051469}
+  m_DeleteButton: {fileID: 0}
+  m_ObjectMenu: {fileID: 72989974}
+  m_ModalMenu: {fileID: 0}
+  m_ObjectMenuAnimator: {fileID: 0}
+  m_ObjectSpawner: {fileID: 436358033}
+  m_CancelButton: {fileID: 0}
+  m_InteractionGroup: {fileID: 0}
+  m_DebugPlaneSlider: {fileID: 0}
+  m_DebugPlane: {fileID: 0}
+  m_PlaneManager: {fileID: 0}
+  m_DebugMenu: {fileID: 0}
+  m_DebugMenuSlider: {fileID: 0}
+  m_TapStartPositionInput:
+    m_InputSourceMode: 2
+    m_InputAction:
+      m_Name: Tap Start Position
+      m_Type: 0
+      m_ExpectedControlType: Vector2
+      m_Id: 1d59f9a7-7305-4922-8c84-b10584226cc5
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_InputActionReference: {fileID: 0}
+    m_ObjectReferenceObject: {fileID: 0}
+    m_ManualValue: {x: 0, y: 0}
+  m_DragCurrentPositionInput:
+    m_InputSourceMode: 2
+    m_InputAction:
+      m_Name: Drag Current Position
+      m_Type: 0
+      m_ExpectedControlType: Vector2
+      m_Id: a0e3aaf2-f0cf-424f-888b-8215b3bc7b3f
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_InputActionReference: {fileID: 0}
+    m_ObjectReferenceObject: {fileID: 0}
+    m_ManualValue: {x: 0, y: 0}
 --- !u!1 &1632253635
 GameObject:
   m_ObjectHideFlags: 0
@@ -6329,11 +6528,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CrosshairController
   crosshairColor: {r: 1, g: 0, b: 0, a: 1}
   crosshairSize: 20
+  shootingColor: {r: 0, g: 1, b: 0, a: 1}
+  minePlacementColor: {r: 1, g: 0.5, b: 0, a: 1}
   thickness: 2
   shootDistance: 100
   shootLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &1976924002 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2512387470528047718, guid: 48cb3fb68c91eb94999fd99957eb0cae,
+    type: 3}
+  m_PrefabInstance: {fileID: 331264285}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1976923995}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa17d122634046b4a8e23048891fafc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1976924006
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6353,6 +6566,58 @@ MonoBehaviour:
   wallObstacleHeight: 2
   maxPlanesPerFrame: 5
   enableDebugLogs: 1
+--- !u!1 &1992553078
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1992553080}
+  - component: {fileID: 1992553079}
+  m_Layer: 0
+  m_Name: ModeToggleButton
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1992553079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1992553078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c65e547983b9041019fe93bd0f2c1234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ModeToggleButton
+  toggleButton: {fileID: 0}
+  buttonText: {fileID: 0}
+  autoCreateUI: 1
+  screenPosition: {x: 0.05, y: 0.15}
+  buttonSize: {x: 120, y: 50}
+  fontSize: 16
+  shootingButtonColor: {r: 0, g: 0.8, b: 0, a: 0.8}
+  minePlacementButtonColor: {r: 1, g: 0.5, b: 0, a: 0.8}
+--- !u!4 &1992553080
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1992553078}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1130.1666, y: 840, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2001374502 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6402244310720262706, guid: 48cb3fb68c91eb94999fd99957eb0cae,
@@ -6440,6 +6705,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2021867756}
   m_CullTransparentMesh: 1
+--- !u!1 &2040103911
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2040103913}
+  - component: {fileID: 2040103912}
+  m_Layer: 0
+  m_Name: InputModeManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2040103912
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040103911}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5792b1e12588749f69c5a3775f0433c9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InputModeManager
+  startingMode: 0
+  currentMode: 0
+--- !u!4 &2040103913
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040103911}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1130.1666, y: 840, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2047503719
 GameObject:
   m_ObjectHideFlags: 0
@@ -7473,6 +7784,7 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 2040103913}
   - {fileID: 188148734}
   - {fileID: 702413259}
   - {fileID: 1075000276}
@@ -7485,3 +7797,7 @@ SceneRoots:
   - {fileID: 1624105739}
   - {fileID: 1073471946}
   - {fileID: 1632253637}
+  - {fileID: 374782153}
+  - {fileID: 1992553080}
+  - {fileID: 647657698}
+  - {fileID: 329863537}

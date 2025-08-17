@@ -10,6 +10,13 @@ public class CrosshairController : MonoBehaviour
     [Tooltip("The size of the crosshair in screen pixels")]
     public float crosshairSize = 20f;
     
+    [Header("Mode Colors")]
+    [Tooltip("Color for shooting mode")]
+    public Color shootingColor = Color.green;
+    
+    [Tooltip("Color for mine placement mode")]
+    public Color minePlacementColor = new Color(1f, 0.5f, 0f, 1f); // Orange
+    
     [Tooltip("The thickness of the crosshair circle")]
     [Range(1f, 10f)]
     public float thickness = 2f;
@@ -27,32 +34,20 @@ public class CrosshairController : MonoBehaviour
     {
         // Create the crosshair UI
         CreateCrosshair();
-        Debug.Log("CrosshairController: Crosshair created");
+        
+        // Subscribe to mode changes
+        InputModeManager.OnModeChanged += OnModeChanged;
+        
+        // Set initial mode visual
+        UpdateModeVisuals();
+        
+        Debug.Log("CrosshairController: Crosshair created and mode listeners setup");
     }
     
     void Update()
     {
-        // Check if we're in mine placement mode and update crosshair color
-        UpdateCrosshairMode();
-    }
-    
-    void UpdateCrosshairMode()
-    {
-        if (crosshairImage == null) return;
-        
-        // Check if ObjectSpawner is enabled (mine placement mode)
-        var objectSpawner = FindFirstObjectByType<UnityEngine.XR.Interaction.Toolkit.Samples.StarterAssets.ObjectSpawner>();
-        
-        if (objectSpawner != null && objectSpawner.enabled)
-        {
-            // Mine placement mode - change to orange/yellow
-            crosshairImage.color = Color.yellow;
-        }
-        else
-        {
-            // Shooting mode - use the original color
-            crosshairImage.color = crosshairColor;
-        }
+        // Crosshair visuals are now handled by mode change events
+        // No continuous updates needed
     }
     
     void CreateCrosshair()
@@ -154,5 +149,39 @@ public class CrosshairController : MonoBehaviour
         }
         
         return false;
+    }
+    
+    /// <summary>
+    /// Handle mode changes from InputModeManager
+    /// </summary>
+    void OnModeChanged(InputMode newMode)
+    {
+        UpdateModeVisuals();
+        Debug.Log($"CrosshairController: Mode changed to {newMode}");
+    }
+    
+    /// <summary>
+    /// Update visual appearance based on current mode
+    /// </summary>
+    void UpdateModeVisuals()
+    {
+        if (crosshairImage == null) return;
+        
+        if (InputModeManager.Instance != null)
+        {
+            Color targetColor = InputModeManager.Instance.IsShootingMode() ? shootingColor : minePlacementColor;
+            crosshairImage.color = targetColor;
+        }
+        else
+        {
+            // Fallback to default color
+            crosshairImage.color = crosshairColor;
+        }
+    }
+    
+    void OnDestroy()
+    {
+        // Unsubscribe from events
+        InputModeManager.OnModeChanged -= OnModeChanged;
     }
 }

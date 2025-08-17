@@ -328,11 +328,21 @@ public class ARTemplateMenuManager : MonoBehaviour
                     Debug.Log($"ARTemplateMenuManager: Selected object '{prefabName}', is mine: {isMine}");
                 }
                 
-                // Enable ObjectSpawner only if this is a mine
+                // Switch to mine placement mode if this is a mine
                 if (isMine)
                 {
                     m_ObjectSpawner.enabled = true;
-                    Debug.Log("ARTemplateMenuManager: Mine selected, enabling ObjectSpawner for mine placement");
+                    
+                    // Switch to mine placement mode
+                    if (InputModeManager.Instance != null)
+                    {
+                        InputModeManager.Instance.SetMode(InputMode.MinePlacement);
+                        Debug.Log("ARTemplateMenuManager: Mine selected, switched to MinePlacement mode");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("ARTemplateMenuManager: InputModeManager not found!");
+                    }
                 }
                 else
                 {
@@ -436,7 +446,14 @@ public class ARTemplateMenuManager : MonoBehaviour
         if (m_ObjectSpawner != null)
         {
             m_ObjectSpawner.enabled = false;
-            Debug.Log("ARTemplateMenuManager: Menu hidden, disabling ObjectSpawner (returning to shooting mode)");
+            Debug.Log("ARTemplateMenuManager: Menu hidden, disabling ObjectSpawner");
+        }
+        
+        // Return to shooting mode
+        if (InputModeManager.Instance != null)
+        {
+            InputModeManager.Instance.SetMode(InputMode.Shooting);
+            Debug.Log("ARTemplateMenuManager: Menu hidden, returning to Shooting mode");
         }
     }
 

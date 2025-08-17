@@ -81,24 +81,33 @@ public class ZombieShooter : MonoBehaviour
             Debug.Log($"ZombieShooter: Input detected! Mouse: {mouseInput}, Touch: {touchInput}, CanShoot: {canShoot}");
         }
         
+        // Only process input if we're in shooting mode
+        if (InputModeManager.Instance != null && !InputModeManager.Instance.IsShootingMode())
+        {
+            // In mine placement mode - don't consume input at all, let ARInteractorSpawnTrigger handle it
+            return;
+        }
+        
         // Use legacy Input for better compatibility
         if (canShoot && (mouseInput || touchInput))
         {
-            // Check if ObjectSpawner is enabled (mine placement mode)
-            ObjectSpawner objectSpawner = FindFirstObjectByType<ObjectSpawner>();
             
-            Debug.Log($"ZombieShooter: ObjectSpawner found: {objectSpawner != null}, Enabled: {(objectSpawner != null ? objectSpawner.enabled : false)}");
+            // Don't shoot if player is dead
+            if (playerHealth != null && playerHealth.IsDead)
+            {
+                Debug.Log("ZombieShooter: Cannot shoot - player is dead");
+                return;
+            }
             
-            // Only shoot if ObjectSpawner is disabled (not in mine placement mode)
-            if (objectSpawner == null || !objectSpawner.enabled)
+            // Don't shoot if UI is blocking
+            if (IsPointerOverUI())
             {
-                Debug.Log("ZombieShooter: Attempting to shoot!");
-                Shoot();
+                Debug.Log("ZombieShooter: Not shooting - pointer over UI");
+                return;
             }
-            else
-            {
-                Debug.Log("ZombieShooter: Not shooting because ObjectSpawner is active (mine placement mode)");
-            }
+            
+            Debug.Log("ZombieShooter: Attempting to shoot!");
+            Shoot();
         }
     }
     

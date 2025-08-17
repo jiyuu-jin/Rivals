@@ -79,7 +79,7 @@ public class TrapTrigger : MonoBehaviour
         Debug.Log($"TRAP DEBUG: Triggered trap placement from spawned mine {gameObject.name}");
         
         // Find LocationMonitor and call PlaceTrap
-        LocationMonitor locationMonitor = FindObjectOfType<LocationMonitor>();
+        LocationMonitor locationMonitor = FindFirstObjectByType<LocationMonitor>();
         if (locationMonitor != null)
         {
             StartCoroutine(locationMonitor.PlaceTrap(OnTrapPlaced));
@@ -98,7 +98,7 @@ public class TrapTrigger : MonoBehaviour
             trapIdentifier.Initialize(trapId, true);
             
             // Register this trap with LocationMonitor to avoid duplicates
-            LocationMonitor locationMonitor = FindObjectOfType<LocationMonitor>();
+            LocationMonitor locationMonitor = FindFirstObjectByType<LocationMonitor>();
             if (locationMonitor != null)
             {
                 locationMonitor.RegisterPlayerTrap(trapId, gameObject);
