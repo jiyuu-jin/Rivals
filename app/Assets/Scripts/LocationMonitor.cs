@@ -356,24 +356,34 @@ public class LocationMonitor : MonoBehaviour
     
     void OnGUI()
     {
-        // Create larger font styles - doubled again
+        // Balance display in top-right corner
         GUIStyle balanceStyle = new GUIStyle(GUI.skin.label);
         balanceStyle.fontSize = 48;
         balanceStyle.fontStyle = FontStyle.Bold;
         
-        GUIStyle subTextStyle = new GUIStyle(GUI.skin.label);
-        subTextStyle.fontSize = 36;
-        
-        // Display balance in top-right corner - positioned to match health bar height
-        GUILayout.BeginArea(new Rect(Screen.width - 500, 80, 480, 180));
+        GUILayout.BeginArea(new Rect(Screen.width - 400, 80, 380, 90));
         GUILayout.BeginVertical("box");
         
         GUILayout.Label($"{currentBalance} RIVAL", balanceStyle, GUILayout.Height(70));
-        GUILayout.Label($"Chain: {currentChain}", subTextStyle, GUILayout.Height(30));
         
-        // Chain toggle button
+        GUILayout.EndVertical();
+        GUILayout.EndArea();
+        
+        // Chain switcher at bottom of screen
+        GUIStyle chainStyle = new GUIStyle(GUI.skin.label);
+        chainStyle.fontSize = 18;
+        chainStyle.alignment = TextAnchor.MiddleCenter;
+        
         GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
         buttonStyle.fontSize = 16;
+        
+        float chainPanelWidth = 300;
+        float chainPanelHeight = 80;
+        GUILayout.BeginArea(new Rect(Screen.width / 2 - chainPanelWidth / 2, Screen.height - chainPanelHeight - 20, chainPanelWidth, chainPanelHeight));
+        GUILayout.BeginVertical("box");
+        
+        GUILayout.Label($"Chain: {GetChainDisplayName()}", chainStyle, GUILayout.Height(30));
+        
         if (GUILayout.Button("Switch Chain", buttonStyle, GUILayout.Height(40)))
         {
             ToggleChain();
@@ -381,6 +391,17 @@ public class LocationMonitor : MonoBehaviour
         
         GUILayout.EndVertical();
         GUILayout.EndArea();
+    }
+    
+    string GetChainDisplayName()
+    {
+        switch (currentChain)
+        {
+            case "anvil": return "Local";
+            case "flow_mainnet": return "Flow";
+            case "chiliz_mainnet": return "Chiliz";
+            default: return currentChain;
+        }
     }
 }
 
