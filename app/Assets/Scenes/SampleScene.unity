@@ -624,6 +624,8 @@ MonoBehaviour:
   removeDelay: 3
   hitFlashColor: {r: 1, g: 0.3, b: 0.3, a: 1}
   hitFlashDuration: 0.2
+  serverUrl: https://rivals.nyc
+  username: player1
   isDead: 0
 --- !u!64 &188148741
 MeshCollider:
@@ -2477,6 +2479,8 @@ MonoBehaviour:
   damageSound: {fileID: 0}
   deathScreen: {fileID: 0}
   deathSound: {fileID: 0}
+  serverUrl: https://rivals.nyc
+  username: player1
 --- !u!1001 &805527811
 PrefabInstance:
   m_ObjectHideFlags: 0

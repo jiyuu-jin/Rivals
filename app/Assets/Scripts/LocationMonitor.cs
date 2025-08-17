@@ -89,7 +89,7 @@ public class LocationMonitor : MonoBehaviour
                 Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
                 string json_body = "{ \"username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
-                using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/movement", json_body, "application/json"))
+                using (UnityWebRequest www = UnityWebRequest.Post("https://rivals.nyc/api/movement", json_body, "application/json"))
                 {
                     yield return www.SendWebRequest();
 
@@ -186,7 +186,7 @@ public class LocationMonitor : MonoBehaviour
         Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
         string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
-        using (UnityWebRequest www = UnityWebRequest.Post("http://10.1.9.21:3000/api/place-trap", json_body, "application/json"))
+        using (UnityWebRequest www = UnityWebRequest.Post("https://rivals.nyc/api/place-trap", json_body, "application/json"))
         {
             yield return www.SendWebRequest();
 
@@ -378,8 +378,8 @@ public class LocationMonitor : MonoBehaviour
         buttonStyle.fontSize = 16;
         
         float chainPanelWidth = 300;
-        float chainPanelHeight = 80;
-        GUILayout.BeginArea(new Rect(Screen.width / 2 - chainPanelWidth / 2, Screen.height - chainPanelHeight - 20, chainPanelWidth, chainPanelHeight));
+        float chainPanelHeight = 160;
+        GUILayout.BeginArea(new Rect(Screen.width / 2 - chainPanelWidth / 2, Screen.height - chainPanelHeight - 80, chainPanelWidth, chainPanelHeight));
         GUILayout.BeginVertical("box");
         
         GUILayout.Label($"Chain: {GetChainDisplayName()}", chainStyle, GUILayout.Height(30));

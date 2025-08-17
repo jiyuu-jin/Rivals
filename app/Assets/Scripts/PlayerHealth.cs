@@ -31,7 +31,7 @@ public class PlayerHealth : MonoBehaviour
     
     [Header("API Settings")]
     [Tooltip("Server URL for API calls")]
-    public string serverUrl = "http://10.1.9.21:3000";
+    public string serverUrl = "https://rivals.nyc";
     
     [Tooltip("Player username for API calls")]
     public string username = "player1";
@@ -250,7 +250,7 @@ public class PlayerHealth : MonoBehaviour
         
         // Get current chain from LocationMonitor
         LocationMonitor locationMonitor = FindFirstObjectByType<LocationMonitor>();
-        string currentChain = "anvil"; // fallback
+        string currentChain = "flow_testnet"; // fallback
         if (locationMonitor != null)
         {
             // Access the current chain via reflection or make it public

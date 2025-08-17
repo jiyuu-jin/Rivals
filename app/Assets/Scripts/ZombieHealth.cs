@@ -35,7 +35,7 @@ public class ZombieHealth : MonoBehaviour
     
     [Header("API Settings")]
     [Tooltip("Server URL for API calls")]
-    public string serverUrl = "http://10.1.9.21:3000";
+    public string serverUrl = "https://rivals.nyc";
     
     [Tooltip("Player username for API calls")]
     public string username = "player1";
