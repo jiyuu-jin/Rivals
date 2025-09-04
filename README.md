@@ -1,6 +1,6 @@
 # Rivals
 
-Rivals is an AR PvP shooter that uses your real-world environment (like Pokémon GO) to spawn zombies you can fight and trap, letting you earn $RIVAL tokens through skill-based combat and location-based strategy.
+Rivals is an AR PvP shooter that uses your real-world environment (like Pokémon GO) to fight zombies, craft traps and eliminate other players, letting you earn $RIVAL tokens through skill-based combat and location-based strategy.
 
 Rivals is deployed on Flow Testnet to [`0xc0BdCb2597984D3f0e356CBb01112782A9ECBEBe`](https://evm-testnet.flowscan.io/token/0xc0BdCb2597984D3f0e356CBb01112782A9ECBEBe?tab=contract)
 
