@@ -15,8 +15,8 @@ interface AppKitProviderProps {
 // Create the AppKit instance
 const modal = createAppKit({
   adapters: [wagmiAdapter],
-  projectId,
-  networks: supportedChains,
+  projectId: projectId!,
+  networks: [...supportedChains],
   defaultNetwork: supportedChains[0],
   metadata,
   features: {

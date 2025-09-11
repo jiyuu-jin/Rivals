@@ -15,8 +15,8 @@ if (!projectId) {
 export const wagmiAdapter = new WagmiAdapter({
   storage: createStorage({ storage: cookieStorage }),
   ssr: true,
-  projectId,
-  networks: supportedChains,
+  projectId: projectId!,
+  networks: [...supportedChains],
 });
 
 // Export the wagmi config
