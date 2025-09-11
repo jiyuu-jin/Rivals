@@ -1,24 +1,26 @@
 'use client';
 
-import { usePrivy } from '@privy-io/react-auth';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { Button, Menu, Text, Group } from '@mantine/core';
 import styles from './WalletConnect.module.css';
 
 export function WalletConnect() {
-  const { login, logout, authenticated, user } = usePrivy();
-  const { address, isConnected } = useAccount();
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
   const { disconnect } = useDisconnect();
+
+  const handleConnect = () => {
+    open();
+  };
 
   const handleDisconnect = () => {
     disconnect();
-    logout();
   };
 
-  if (!authenticated || !isConnected) {
+  if (!isConnected) {
     return (
       <Button 
-        onClick={login}
+        onClick={handleConnect}
         className={styles.connectButton}
         variant="outline"
       >
