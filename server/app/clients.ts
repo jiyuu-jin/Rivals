@@ -1,6 +1,6 @@
 import { Chain, createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvil, chiliz, flowMainnet, flowTestnet, spicy } from "viem/chains";
+import { anvil, flowMainnet, flowTestnet } from "viem/chains";
 
 // Chain configuration with separate contract addresses and private keys
 export const CHAIN_CONFIG = {
@@ -19,16 +19,6 @@ export const CHAIN_CONFIG = {
         contractAddress: process.env.FLOW_TESTNET_CONTRACT_ADDRESS,
         privateKey: process.env.FLOW_TESTNET_PRIVATE_KEY,
     },
-    chiliz_mainnet: {
-        chain: chiliz,
-        contractAddress: process.env.CHILIZ_MAINNET_CONTRACT_ADDRESS,
-        privateKey: process.env.CHILIZ_MAINNET_PRIVATE_KEY,
-    },
-    chiliz_testnet: {
-        chain: spicy,
-        contractAddress: process.env.CHILIZ_TESTNET_CONTRACT_ADDRESS,
-        privateKey: process.env.CHILIZ_TESTNET_PRIVATE_KEY,
-    },
 } as const;
 
 // Default chain based on environment variables (for backward compatibility)
@@ -37,10 +27,6 @@ if (process.env.CHAIN_FLOW_MAINNET === "true") {
     defaultChain = flowMainnet;
 } else if (process.env.CHAIN_FLOW_TESTNET === "true") {
     defaultChain = flowTestnet;
-} else if (process.env.CHAIN_CHILIZ_MAINNET === "true") {
-    defaultChain = chiliz;
-} else if (process.env.CHAIN_CHILIZ_TESTNET === "true") {
-    defaultChain = spicy;
 } else {
     defaultChain = anvil;
 }

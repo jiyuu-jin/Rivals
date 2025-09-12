@@ -4,7 +4,7 @@ import { pg } from '@/app/pg';
 import { getClientsByChainId, SupportedChainId } from '@/app/clients';
 import { getContractAddress } from '@/app/lib/chains';
 import { createPublicClient, http, formatUnits } from 'viem';
-import { flowTestnet, chilizSpicy, anvil } from '@/app/lib/chains';
+import { flowTestnet, anvil } from '@/app/lib/chains';
 import RivalsToken from '../../RivalsToken.json';
 
 export interface LeaderboardEntry {
@@ -63,12 +63,6 @@ export async function getLeaderboardData(chainId?: number): Promise<{
         transport: http(),
       });
       contractAddress = getContractAddress(545);
-    } else if (chainId === 88882) {
-      publicClient = createPublicClient({
-        chain: chilizSpicy,
-        transport: http(),
-      });
-      contractAddress = getContractAddress(88882);
     } else {
       // Default to anvil or existing clients
       const clients = getClientsByChainId();
