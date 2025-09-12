@@ -1,6 +1,18 @@
 {
   "dependencies": {
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/UnityMcpBridge",
+    "com.nethereum.unity": "5.0.0",
+    "com.reown.appkit.unity": "1.4.6",
+    "com.reown.core": "1.4.6",
+    "com.reown.core.common": "1.4.6",
+    "com.reown.core.crypto": "1.4.6",
+    "com.reown.core.network": "1.4.6",
+    "com.reown.core.storage": "1.4.6",
+    "com.reown.sign": "1.4.6",
+    "com.reown.sign.nethereum": "1.4.6",
+    "com.reown.sign.nethereum.unity": "1.4.6",
+    "com.reown.sign.unity": "1.4.6",
+    "com.reown.unity.dependencies": "1.4.6",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.ai.navigation": "2.0.8",
     "com.unity.collab-proxy": "2.9.1",
@@ -48,5 +60,15 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
-  }
+  },
+  "scopedRegistries": [
+    {
+      "name": "OpenUPM",
+      "url": "https://package.openupm.com",
+      "scopes": [
+        "com.reown",
+        "com.nethereum"
+      ]
+    }
+  ]
 }

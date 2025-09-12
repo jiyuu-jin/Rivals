@@ -400,9 +400,6 @@ public class LocationMonitor : MonoBehaviour
             case "anvil": return "Local";
             case "flow_mainnet": return "Flow";
             case "flow_testnet": return "Flow Testnet";
-            case "chiliz_mainnet": return "Chiliz";
-            case "flow_testnet": return "Flow Testnet";
-            case "chiliz_testnet": return "Chiliz Testnet";
             case "spicy": return "Spicy";
             default: return currentChain;
         }

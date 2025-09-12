@@ -2481,8 +2481,6 @@ MonoBehaviour:
   deathSound: {fileID: 0}
   serverUrl: https://rivals.nyc
   username: player1
-  serverUrl: http://10.1.9.21:3000
-  username: player1
 --- !u!1001 &805527811
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4390,6 +4388,53 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1 &1219268649
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1219268651}
+  - component: {fileID: 1219268650}
+  m_Layer: 0
+  m_Name: AppKitInitializer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1219268650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219268649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02240fbad35684123aa5584bf71a3e67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AppKitInitializer
+  appKitConfig: {fileID: 11400000, guid: 9edb74890a41846b282dd1e3877a964c, type: 2}
+  autoInitialize: 1
+  isInitialized: 0
+--- !u!4 &1219268651
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219268649}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1151.7552, y: 0, z: 285.31396}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1262986090
 GameObject:
   m_ObjectHideFlags: 0
@@ -7803,6 +7848,7 @@ SceneRoots:
   - {fileID: 1624105739}
   - {fileID: 1073471946}
   - {fileID: 1632253637}
+  - {fileID: 1219268651}
   - {fileID: 374782153}
   - {fileID: 1992553080}
   - {fileID: 647657698}
