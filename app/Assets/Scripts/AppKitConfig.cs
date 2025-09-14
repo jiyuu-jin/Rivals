@@ -1,13 +1,14 @@
 using UnityEngine;
 
 /// <summary>
-/// Configuration ScriptableObject for AppKit settings
+/// Configuration ScriptableObject for Reown AppKit settings
+/// Based on: https://docs.reown.com/appkit/unity/core/installation
 /// </summary>
-[CreateAssetMenu(fileName = "AppKitConfig", menuName = "Game/AppKit Config")]
-public class AppKitConfig : ScriptableObject
+[CreateAssetMenu(fileName = "ReownAppKitConfig", menuName = "Game/Reown AppKit Config")]
+public class ReownAppKitConfig : ScriptableObject
 {
     [Header("AppKit Configuration")]
-    [Tooltip("Your AppKit project ID")]
+    [Tooltip("Your AppKit project ID from Reown Dashboard (https://cloud.reown.com)")]
     public string projectId = "YOUR PROJECT ID";
     
     [Header("Metadata")]

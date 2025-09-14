@@ -4419,6 +4419,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AppKitInitializer
   appKitConfig: {fileID: 11400000, guid: 9edb74890a41846b282dd1e3877a964c, type: 2}
   autoInitialize: 1
+  autoConnectWallet: 1
   isInitialized: 0
 --- !u!4 &1219268651
 Transform:
@@ -6938,6 +6939,74 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2047503719}
   m_CullTransparentMesh: 1
+--- !u!1001 &2047885614
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1001.766
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -199.57568
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 710658489450244879, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6019781919744940759, guid: fc9e7b2d2aa114b7684aede0fa95d202,
+        type: 3}
+      propertyPath: m_Name
+      value: Reown AppKit
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: fc9e7b2d2aa114b7684aede0fa95d202, type: 3}
 --- !u!1 &2060259425
 GameObject:
   m_ObjectHideFlags: 0
@@ -7853,3 +7922,4 @@ SceneRoots:
   - {fileID: 1992553080}
   - {fileID: 647657698}
   - {fileID: 329863537}
+  - {fileID: 2047885614}

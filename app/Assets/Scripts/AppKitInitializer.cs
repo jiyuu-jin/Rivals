@@ -1,18 +1,23 @@
 using UnityEngine;
 using System.Threading.Tasks;
+using Reown.AppKit.Unity;
 
 /// <summary>
-/// Handles AppKit initialization using configuration from ScriptableObject
+/// Handles Reown AppKit initialization using configuration from ScriptableObject
+/// Based on: https://docs.reown.com/appkit/unity/core/installation
 /// </summary>
 public class AppKitInitializer : MonoBehaviour
 {
     [Header("Configuration")]
-    [Tooltip("Reference to the AppKit configuration asset")]
-    public AppKitConfig appKitConfig;
+    [Tooltip("Reference to the Reown AppKit configuration asset")]
+    public ReownAppKitConfig appKitConfig;
     
     [Header("Auto Initialize")]
     [Tooltip("Whether to automatically initialize AppKit on Start")]
     public bool autoInitialize = true;
+    
+    [Tooltip("Whether to automatically attempt wallet connection after initialization")]
+    public bool autoConnectWallet = true;
     
     [Header("Status")]
     [Tooltip("Shows the current initialization status")]
@@ -22,7 +27,14 @@ public class AppKitInitializer : MonoBehaviour
     {
         if (autoInitialize)
         {
-            await InitializeAppKit();
+            if (autoConnectWallet)
+            {
+                await InitializeAndConnectWallet();
+            }
+            else
+            {
+                await InitializeAppKit();
+            }
         }
     }
     
@@ -51,24 +63,22 @@ public class AppKitInitializer : MonoBehaviour
         
         try
         {
-            Debug.Log("AppKitInitializer: Starting AppKit initialization...");
+            Debug.Log("AppKitInitializer: Starting Reown AppKit initialization...");
             
-            // Note: This assumes AppKit namespace/class exists in your project
-            // You may need to adjust the namespace or add using statements based on your AppKit implementation
-            await AppKit.InitializeAsync(
-                new AppKitConfiguration(
-                    projectId: appKitConfig.projectId,
-                    new Metadata(
-                        name: appKitConfig.gameName,
-                        description: appKitConfig.gameDescription,
-                        url: appKitConfig.gameUrl,
-                        iconUrl: appKitConfig.iconUrl
-                    )
+            var config = new AppKitConfig(
+                projectId: appKitConfig.projectId,
+                new Metadata(
+                    name: appKitConfig.gameName,
+                    description: appKitConfig.gameDescription,
+                    url: appKitConfig.gameUrl,
+                    iconUrl: appKitConfig.iconUrl
                 )
             );
             
+            await AppKit.InitializeAsync(config);
+            
             isInitialized = true;
-            Debug.Log("AppKitInitializer: AppKit initialization completed successfully!");
+            Debug.Log("AppKitInitializer: Reown AppKit initialization completed successfully!");
         }
         catch (System.Exception e)
         {
@@ -94,63 +104,147 @@ public class AppKitInitializer : MonoBehaviour
     }
     
     /// <summary>
+    /// Manually trigger wallet connection
+    /// </summary>
+    [ContextMenu("Connect Wallet")]
+    public void ConnectWalletManual()
+    {
+        if (Application.isPlaying)
+        {
+            _ = InitializeAndConnectWallet();
+        }
+        else
+        {
+            Debug.LogWarning("AppKitInitializer: Cannot connect wallet outside of play mode");
+        }
+    }
+    
+    /// <summary>
+    /// Manually open wallet modal
+    /// </summary>
+    [ContextMenu("Open Wallet Modal")]
+    public void OpenWalletModalManual()
+    {
+        if (Application.isPlaying)
+        {
+            OpenWalletModal();
+        }
+        else
+        {
+            Debug.LogWarning("AppKitInitializer: Cannot open wallet modal outside of play mode");
+        }
+    }
+    
+    /// <summary>
     /// Check if AppKit is initialized
     /// </summary>
     public bool IsInitialized => isInitialized;
-}
-
-// Note: These classes represent the expected AppKit API structure
-// You may need to adjust these based on your actual AppKit implementation
-
-/// <summary>
-/// Mock AppKit class - replace with your actual AppKit implementation
-/// </summary>
-public static class AppKit
-{
-    public static async Task InitializeAsync(AppKitConfiguration config)
+    
+    /// <summary>
+    /// Try to resume a previous wallet session
+    /// </summary>
+    public async Task<bool> TryResumeSession()
     {
-        // Simulate async initialization
-        await Task.Delay(100);
+        if (!isInitialized)
+        {
+            Debug.LogWarning("AppKitInitializer: Cannot resume session - AppKit is not initialized");
+            return false;
+        }
         
-        // Your actual AppKit initialization logic goes here
-        Debug.Log($"AppKit initialized with project ID: {config.ProjectId}");
-        Debug.Log($"Game: {config.Metadata.Name}");
-        Debug.Log($"Description: {config.Metadata.Description}");
-        Debug.Log($"URL: {config.Metadata.Url}");
-        Debug.Log($"Icon: {config.Metadata.IconUrl}");
+        try
+        {
+            Debug.Log("AppKitInitializer: Attempting to resume previous wallet session...");
+            var resumed = await AppKit.ConnectorController.TryResumeSessionAsync();
+            
+            if (resumed)
+            {
+                Debug.Log("AppKitInitializer: Successfully resumed previous wallet session");
+            }
+            else
+            {
+                Debug.Log("AppKitInitializer: No previous session found to resume");
+            }
+            
+            return resumed;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"AppKitInitializer: Failed to resume session: {e.Message}");
+            Debug.LogException(e);
+            return false;
+        }
     }
-}
-
-/// <summary>
-/// AppKit configuration structure - adjust based on your actual AppKit API
-/// </summary>
-public class AppKitConfiguration
-{
-    public string ProjectId { get; }
-    public Metadata Metadata { get; }
     
-    public AppKitConfiguration(string projectId, Metadata metadata)
+    /// <summary>
+    /// Open the wallet connection modal
+    /// </summary>
+    public void OpenWalletModal()
     {
-        ProjectId = projectId;
-        Metadata = metadata;
+        if (!isInitialized)
+        {
+            Debug.LogWarning("AppKitInitializer: Cannot open wallet modal - AppKit is not initialized");
+            return;
+        }
+        
+        try
+        {
+            Debug.Log("AppKitInitializer: Opening wallet connection modal...");
+            AppKit.OpenModal();
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"AppKitInitializer: Failed to open wallet modal: {e.Message}");
+            Debug.LogException(e);
+        }
     }
-}
-
-/// <summary>
-/// Metadata structure for AppKit - adjust based on your actual AppKit API
-/// </summary>
-public class Metadata
-{
-    public string Name { get; }
-    public string Description { get; }
-    public string Url { get; }
-    public string IconUrl { get; }
     
-    public Metadata(string name, string description, string url, string iconUrl)
+    /// <summary>
+    /// Initialize AppKit and attempt to resume or connect wallet
+    /// </summary>
+    public async Task InitializeAndConnectWallet()
     {
-        Name = name;
-        Description = description;
-        Url = url;
-        IconUrl = iconUrl;
+        await InitializeAppKit();
+        
+        if (!isInitialized) return;
+        
+        // Try to resume previous session
+        var resumed = await TryResumeSession();
+        
+        if (!resumed)
+        {
+            // If no previous session, open connection modal
+            Debug.Log("AppKitInitializer: No previous session found, opening wallet connection modal");
+            
+            // Subscribe to account connected event
+            AppKit.AccountConnected += OnAccountConnected;
+            OpenWalletModal();
+        }
+        else
+        {
+            OnAccountConnected(this, System.EventArgs.Empty);
+        }
+    }
+    
+    /// <summary>
+    /// Handle account connection
+    /// </summary>
+    private void OnAccountConnected(object sender, System.EventArgs e)
+    {
+        Debug.Log("AppKitInitializer: Wallet account connected successfully!");
+        
+        // Unsubscribe to prevent multiple calls
+        AppKit.AccountConnected -= OnAccountConnected;
+        
+        // Add your custom logic here for when wallet is connected
+        OnWalletConnected();
+    }
+    
+    /// <summary>
+    /// Override this method to add custom logic when wallet is connected
+    /// </summary>
+    protected virtual void OnWalletConnected()
+    {
+        Debug.Log("AppKitInitializer: Wallet connected - ready for blockchain interactions!");
+        // Add your game-specific logic here
     }
 }
