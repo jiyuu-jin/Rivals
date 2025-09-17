@@ -1,5 +1,5 @@
 import { Navigation } from '@/app/components';
-import { IntegratedLeaderboard } from './IntegratedLeaderboard';
+import { IntegratedLeaderboard } from './Leaderboard';
 import styles from './page.module.css';
 
 export default function LeaderboardPage() {
