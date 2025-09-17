@@ -1,5 +1,5 @@
 import { Navigation } from '@/app/components';
-import { IntegratedLeaderboard } from './Leaderboard';
+import { Leaderboard } from './Leaderboard';
 import styles from './page.module.css';
 
 export default function LeaderboardPage() {
@@ -8,7 +8,7 @@ export default function LeaderboardPage() {
       <Navigation />
       <main className={styles.main}>
         <div className={styles.container}>
-          <IntegratedLeaderboard />
+          <Leaderboard />
         </div>
       </main>
     </>

@@ -1,11 +1,11 @@
 'use client';
 
-import { Table, Text, Button, Progress, Group, Stack } from '@mantine/core';
+import { Table, Text, Button, Progress } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { getLeaderboardData, getPlayerChallenges, type LeaderboardEntry, type PlayerProfile } from '@/app/lib/leaderboard-actions';
 import { useTokenBalance } from '@/app/hooks/useTokenBalance';
-import styles from './IntegratedLeaderboard.module.css';
+import styles from './Leaderboard.module.css';
 
 interface LeaderboardData {
   leaderboard: LeaderboardEntry[];
@@ -19,7 +19,7 @@ interface ChallengeData {
   achievements: Array<{ icon: string; text: string; }>;
 }
 
-export function IntegratedLeaderboard() {
+export function Leaderboard() {
   const { chainId, isConnected } = useAccount();
   const { balance, isLoading: balanceLoading, isError: balanceError, hasContract } = useTokenBalance();
   const [data, setData] = useState<LeaderboardData | null>(null);
