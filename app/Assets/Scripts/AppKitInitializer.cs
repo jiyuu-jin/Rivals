@@ -141,6 +141,55 @@ public class AppKitInitializer : MonoBehaviour
     public bool IsInitialized => isInitialized;
     
     /// <summary>
+    /// Check if a wallet is currently connected
+    /// </summary>
+    public bool IsWalletConnected
+    {
+        get
+        {
+            if (!isInitialized) return false;
+            
+            try
+            {
+                var controller = AppKit.ConnectorController;
+                return controller != null && controller.IsAccountConnected;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"AppKitInitializer: Could not check wallet connection status: {e.Message}");
+                return false;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Get the currently connected wallet address
+    /// </summary>
+    public string ConnectedWalletAddress
+    {
+        get
+        {
+            if (!isInitialized || !IsWalletConnected) return "";
+            
+            try
+            {
+                var controller = AppKit.ConnectorController;
+                if (controller != null && controller.IsAccountConnected)
+                {
+                    var account = controller.Account;
+                    return account.Address ?? "";
+                }
+                return "";
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"AppKitInitializer: Could not get wallet address: {e.Message}");
+                return "";
+            }
+        }
+    }
+    
+    /// <summary>
     /// Try to resume a previous wallet session
     /// </summary>
     public async Task<bool> TryResumeSession()
