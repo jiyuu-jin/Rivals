@@ -31,7 +31,9 @@ export function Leaderboard() {
     async function fetchData() {
       try {
         setLoading(true);
+        console.log('[LEADERBOARD CLIENT] Fetching data with chainId:', chainId, 'isConnected:', isConnected);
         const leaderboardData = await getLeaderboardData(chainId);
+        console.log('[LEADERBOARD CLIENT] Received data:', leaderboardData);
         setData(leaderboardData);
         
         if (leaderboardData.currentPlayerUsername) {
@@ -47,7 +49,7 @@ export function Leaderboard() {
     }
 
     fetchData();
-  }, []);
+  }, [chainId, isConnected]);
 
   if (loading) {
     return (

@@ -1,11 +1,7 @@
 'use server';
 
 import { pg } from '@/app/pg';
-import { getClientsByChainId, SupportedChainId } from '@/app/clients';
-import { getContractAddress } from '@/app/lib/chains';
-import { createPublicClient, http, formatUnits } from 'viem';
-import { flowTestnet, anvil } from '@/app/lib/chains';
-import RivalsToken from '../../RivalsToken.json';
+import { getTokenHoldersFromEvents, type TokenHolder } from '@/app/lib/token-events';
 
 export interface LeaderboardEntry {
   rank: number;
@@ -31,6 +27,7 @@ export async function getLeaderboardData(chainId?: number): Promise<{
   currentPlayerUsername?: string;
 }> {
   try {
+    console.log('[LEADERBOARD DEBUG] Starting getLeaderboardData with chainId:', chainId);
     const db = pg();
 
     // Get all users with their kill counts and last active times
@@ -46,48 +43,24 @@ export async function getLeaderboardData(chainId?: number): Promise<{
       ORDER BY kill_count DESC, last_active DESC
     `;
 
-    if (users.length === 0) {
-      return {
-        leaderboard: [],
-        playerProfile: null,
-      };
-    }
+    console.log('[LEADERBOARD DEBUG] Found users in database:', users.length);
 
-    // Get blockchain client based on chainId
-    let publicClient;
-    let contractAddress;
+    // Get token holders from blockchain events (last 2 months)
+    console.log('[LEADERBOARD DEBUG] Fetching token balances from Transfer events...');
+    const tokenHolders = await getTokenHoldersFromEvents(chainId);
+    console.log('[LEADERBOARD DEBUG] Found', tokenHolders.length, 'token holders from events');
 
-    if (chainId === 545) {
-      publicClient = createPublicClient({
-        chain: flowTestnet,
-        transport: http(),
-      });
-      contractAddress = getContractAddress(545);
-    } else {
-      // Default to anvil or existing clients
-      const clients = getClientsByChainId();
-      publicClient = clients.publicClient;
-      contractAddress = clients.contractAddress;
-    }
+    // Create a map for quick balance lookups
+    const balanceMap = new Map<string, TokenHolder>();
+    tokenHolders.forEach(holder => {
+      balanceMap.set(holder.address.toLowerCase(), holder);
+    });
 
-    // Fetch token balances for all users
-    const leaderboardPromises = users.map(async (user, index) => {
-      let tokenBalance = 0;
-
-      try {
-        const balance = await publicClient.readContract({
-          address: contractAddress as `0x${string}`,
-          abi: RivalsToken.abi,
-          functionName: 'balanceOf',
-          args: [user.evm_address as `0x${string}`],
-        }) as bigint;
-
-        // Convert from wei to tokens
-        tokenBalance = Math.floor(parseFloat(formatUnits(balance, 18)));
-      } catch (error) {
-        console.error(`Error fetching balance for ${user.username}:`, error);
-        tokenBalance = 0;
-      }
+    // Combine database users with blockchain balances
+    const leaderboardData = users.map((user, index) => {
+      const userAddress = user.evm_address?.toLowerCase();
+      const holderData = userAddress ? balanceMap.get(userAddress) : null;
+      const tokenBalance = holderData ? Math.floor(parseFloat(holderData.formattedBalance)) : 0;
 
       // Format last active time
       const lastActiveDate = new Date(user.last_active);
@@ -120,14 +93,31 @@ export async function getLeaderboardData(chainId?: number): Promise<{
       };
     });
 
-    const leaderboardData = await Promise.all(leaderboardPromises);
-
-    // Sort by a combination of kills and tokens (prioritize kills, then tokens as tiebreaker)
-    leaderboardData.sort((a, b) => {
-      if (a.kills !== b.kills) {
-        return b.kills - a.kills;
+    // Also include token holders who aren't in our users database
+    const knownAddresses = new Set(users.map(u => u.evm_address?.toLowerCase()).filter(Boolean));
+    tokenHolders.forEach(holder => {
+      if (!knownAddresses.has(holder.address.toLowerCase())) {
+        const tokenBalance = Math.floor(parseFloat(holder.formattedBalance));
+        if (tokenBalance > 0) {
+          leaderboardData.push({
+            rank: 0, // Will be set after sorting
+            username: `${holder.address.slice(0, 6)}...${holder.address.slice(-4)}`, // Shortened address
+            kills: 0, // No game data available
+            tokens: tokenBalance,
+            lastActive: 'unknown',
+            evmAddress: holder.address,
+            trapsSet: 0,
+          });
+        }
       }
-      return b.tokens - a.tokens;
+    });
+
+    // Sort by a combination of tokens and kills (prioritize tokens, then kills as tiebreaker)
+    leaderboardData.sort((a, b) => {
+      if (a.tokens !== b.tokens) {
+        return b.tokens - a.tokens; // Higher tokens first
+      }
+      return b.kills - a.kills; // Then higher kills
     });
 
     // Update ranks after sorting
@@ -135,9 +125,12 @@ export async function getLeaderboardData(chainId?: number): Promise<{
       entry.rank = index + 1;
     });
 
+    // Filter out entries with 0 tokens for cleaner display
+    const filteredLeaderboard = leaderboardData.filter(entry => entry.tokens > 0);
+
     // For demo purposes, let's assume the first player is the current player
     // In a real app, you'd get this from authentication/session
-    const currentPlayer = leaderboardData[0];
+    const currentPlayer = filteredLeaderboard[0];
     const playerProfile: PlayerProfile | null = currentPlayer ? {
       username: currentPlayer.username,
       rank: currentPlayer.rank,
@@ -147,8 +140,10 @@ export async function getLeaderboardData(chainId?: number): Promise<{
       timeSurvived: '1h 32m', // This would be calculated from game session data
     } : null;
 
+    console.log('[LEADERBOARD DEBUG] Final leaderboard has', filteredLeaderboard.length, 'entries');
+
     return {
-      leaderboard: leaderboardData.slice(0, 10), // Top 10 for leaderboard display
+      leaderboard: filteredLeaderboard.slice(0, 10), // Top 10 for leaderboard display
       playerProfile,
       currentPlayerUsername: currentPlayer?.username,
     };
