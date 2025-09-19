@@ -62,30 +62,37 @@ export async function getLeaderboardData(chainId?: number): Promise<{
       const holderData = userAddress ? balanceMap.get(userAddress) : null;
       const tokenBalance = holderData ? Math.floor(parseFloat(holderData.formattedBalance)) : 0;
 
-      // Format last active time
-      const lastActiveDate = new Date(user.last_active);
-      const now = new Date();
-      const diffMinutes = Math.floor((now.getTime() - lastActiveDate.getTime()) / (1000 * 60));
-
+      // Use blockchain-based last active time if available, otherwise fall back to database
       let lastActiveString: string;
-      if (diffMinutes < 1) {
-        lastActiveString = 'just now';
-      } else if (diffMinutes < 60) {
-        lastActiveString = `${diffMinutes} min${diffMinutes === 1 ? '' : 's'} ago`;
+      if (holderData?.lastActiveString) {
+        lastActiveString = holderData.lastActiveString;
+        console.log('[LEADERBOARD DEBUG] Using blockchain data for', user.username, '- transfers:', holderData.transferCount, 'last active:', lastActiveString);
       } else {
-        const diffHours = Math.floor(diffMinutes / 60);
-        if (diffHours < 24) {
-          lastActiveString = `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+        // Fallback to database timestamp if no blockchain activity
+        const lastActiveDate = new Date(user.last_active);
+        const now = new Date();
+        const diffMinutes = Math.floor((now.getTime() - lastActiveDate.getTime()) / (1000 * 60));
+
+        if (diffMinutes < 1) {
+          lastActiveString = 'just now';
+        } else if (diffMinutes < 60) {
+          lastActiveString = `${diffMinutes} min${diffMinutes === 1 ? '' : 's'} ago`;
         } else {
-          const diffDays = Math.floor(diffHours / 24);
-          lastActiveString = `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+          const diffHours = Math.floor(diffMinutes / 60);
+          if (diffHours < 24) {
+            lastActiveString = `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+          } else {
+            const diffDays = Math.floor(diffHours / 24);
+            lastActiveString = `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+          }
         }
+        console.log('[LEADERBOARD DEBUG] Using database last active for', user.username, ':', lastActiveString);
       }
 
       return {
         rank: index + 1,
         username: user.username,
-        kills: user.kill_count,
+        kills: holderData?.transferCount || 0, // Use blockchain transfer count instead of database kills
         tokens: tokenBalance,
         lastActive: lastActiveString,
         evmAddress: user.evm_address,
@@ -102,9 +109,9 @@ export async function getLeaderboardData(chainId?: number): Promise<{
           leaderboardData.push({
             rank: 0, // Will be set after sorting
             username: `${holder.address.slice(0, 6)}...${holder.address.slice(-4)}`, // Shortened address
-            kills: 0, // No game data available
+            kills: holder.transferCount, // Use blockchain transfer count
             tokens: tokenBalance,
-            lastActive: 'unknown',
+            lastActive: holder.lastActiveString || 'unknown', // Use blockchain last active
             evmAddress: holder.address,
             trapsSet: 0,
           });
@@ -134,7 +141,7 @@ export async function getLeaderboardData(chainId?: number): Promise<{
     const playerProfile: PlayerProfile | null = currentPlayer ? {
       username: currentPlayer.username,
       rank: currentPlayer.rank,
-      kills: currentPlayer.kills,
+      kills: currentPlayer.kills, // Now uses blockchain transfer count
       tokens: currentPlayer.tokens,
       trapsSet: currentPlayer.trapsSet,
       timeSurvived: '1h 32m', // This would be calculated from game session data

@@ -9,6 +9,9 @@ export interface TokenHolder {
   balance: bigint;
   formattedBalance: string;
   rank: number;
+  lastActiveTimestamp?: number;
+  lastActiveString?: string;
+  transferCount: number;
 }
 
 export interface TransferEvent {
@@ -140,11 +143,34 @@ export async function getTokenHoldersFromEvents(chainId?: number): Promise<Token
       }
     }
 
-    // Calculate balances from events
+    // Calculate balances and track last activity from events
     const balances = new Map<string, bigint>();
+    const lastActivityMap = new Map<string, number>(); // address -> timestamp
+    const transferCountMap = new Map<string, number>(); // address -> transfer count
     const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
     console.log('[TOKEN EVENTS] Processing', transferEvents.length, 'Transfer events...');
+
+    // First, get block timestamps for all unique blocks
+    const uniqueBlocks = new Set<bigint>();
+    transferEvents.forEach(event => {
+      if (event.blockNumber) {
+        uniqueBlocks.add(event.blockNumber);
+      }
+    });
+
+    console.log('[TOKEN EVENTS] Fetching timestamps for', uniqueBlocks.size, 'unique blocks...');
+    const blockTimestamps = new Map<bigint, number>();
+
+    // Fetch block details to get timestamps
+    for (const blockNumber of uniqueBlocks) {
+      try {
+        const block = await publicClient.getBlock({ blockNumber });
+        blockTimestamps.set(blockNumber, Number(block.timestamp));
+      } catch (error) {
+        console.warn('[TOKEN EVENTS] Could not fetch block', blockNumber.toString(), ':', error);
+      }
+    }
 
     for (const event of transferEvents) {
       const { from, to, value } = event.args!;
@@ -155,14 +181,45 @@ export async function getTokenHoldersFromEvents(chainId?: number): Promise<Token
         continue;
       }
 
+      const blockTimestamp = event.blockNumber ? blockTimestamps.get(event.blockNumber) : undefined;
+
       console.log('[TOKEN EVENTS] Processing Transfer:', {
         from,
         to,
         value: value.toString(),
         blockNumber: event.blockNumber?.toString(),
+        timestamp: blockTimestamp,
         txHash: event.transactionHash
       });
 
+      // Update last activity and transfer count for both sender and receiver
+      if (blockTimestamp) {
+        // Update last activity for sender (skip mint events where from = 0x0)
+        if (from && from.toLowerCase() !== ZERO_ADDRESS.toLowerCase()) {
+          const normalizedFrom = getAddress(from);
+          const currentLastActivity = lastActivityMap.get(normalizedFrom) || 0;
+          if (blockTimestamp > currentLastActivity) {
+            lastActivityMap.set(normalizedFrom, blockTimestamp);
+          }
+          // Increment transfer count for sender
+          const currentCount = transferCountMap.get(normalizedFrom) || 0;
+          transferCountMap.set(normalizedFrom, currentCount + 1);
+        }
+        
+        // Update last activity for receiver (skip burn events where to = 0x0)
+        if (to && to.toLowerCase() !== ZERO_ADDRESS.toLowerCase()) {
+          const normalizedTo = getAddress(to);
+          const currentLastActivity = lastActivityMap.get(normalizedTo) || 0;
+          if (blockTimestamp > currentLastActivity) {
+            lastActivityMap.set(normalizedTo, blockTimestamp);
+          }
+          // Increment transfer count for receiver
+          const currentCount = transferCountMap.get(normalizedTo) || 0;
+          transferCountMap.set(normalizedTo, currentCount + 1);
+        }
+      }
+
+      // Calculate balances
       // Subtract from sender (skip mint events where from = 0x0)
       if (from && from.toLowerCase() !== ZERO_ADDRESS.toLowerCase()) {
         const normalizedFrom = getAddress(from); // Normalize address case
@@ -197,22 +254,51 @@ export async function getTokenHoldersFromEvents(chainId?: number): Promise<Token
         return 0;
       });
 
+    // Helper function to format timestamp to human-readable string
+    const formatLastActive = (timestamp?: number): string => {
+      if (!timestamp) return 'unknown';
+
+      const now = Math.floor(Date.now() / 1000); // Current time in seconds
+      const diffSeconds = now - timestamp;
+
+      if (diffSeconds < 60) {
+        return 'just now';
+      } else if (diffSeconds < 3600) {
+        const minutes = Math.floor(diffSeconds / 60);
+        return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
+      } else if (diffSeconds < 86400) {
+        const hours = Math.floor(diffSeconds / 3600);
+        return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+      } else {
+        const days = Math.floor(diffSeconds / 86400);
+        return `${days} day${days === 1 ? '' : 's'} ago`;
+      }
+    };
+
     // Assign ranks and format
     for (const [address, balance] of balanceArray) {
+      const lastActiveTimestamp = lastActivityMap.get(address);
+      const transferCount = transferCountMap.get(address) || 0;
+      
       holders.push({
         address,
         balance,
         formattedBalance: formatUnits(balance, 18),
-        rank: rank++
+        rank: rank++,
+        lastActiveTimestamp,
+        lastActiveString: formatLastActive(lastActiveTimestamp),
+        transferCount
       });
     }
 
     console.log('[TOKEN EVENTS] Calculated balances for', holders.length, 'token holders');
-
+    console.log('[TOKEN EVENTS] Last activity tracked for', lastActivityMap.size, 'addresses');
+    console.log('[TOKEN EVENTS] Transfer counts tracked for', transferCountMap.size, 'addresses');
+    
     // Log top 5 holders for debugging
     console.log('[TOKEN EVENTS] Top 5 holders:');
     holders.slice(0, 5).forEach(holder => {
-      console.log(`  ${holder.rank}. ${holder.address}: ${holder.formattedBalance} tokens`);
+      console.log(`  ${holder.rank}. ${holder.address}: ${holder.formattedBalance} tokens, ${holder.transferCount} transfers (last active: ${holder.lastActiveString})`);
     });
 
     return holders;

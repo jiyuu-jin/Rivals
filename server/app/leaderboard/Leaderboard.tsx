@@ -137,7 +137,7 @@ export function Leaderboard() {
               <th className={styles.headerName}></th>
               <th className={styles.headerKills}>KILLS</th>
               <th className={styles.headerTokens}>TOKENS</th>
-              <th className={styles.headerLastActive}>LAST ACTIVE</th>
+              <th className={styles.headerLastActive}>ACTIVE</th>
             </tr>
           </thead>
           <tbody>
