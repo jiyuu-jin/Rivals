@@ -12,6 +12,9 @@ public class WalletStatusButton : MonoBehaviour
     [Tooltip("Reference to the AppKit initializer")]
     public AppKitInitializer appKitInitializer;
     
+    [Tooltip("Reference to the authenticated API client")]
+    public AuthenticatedAPIClient apiClient;
+    
     [Header("UI Positioning")]
     [Tooltip("Button position from screen edge")]
     public float marginFromEdge = 20f;
@@ -33,7 +36,7 @@ public class WalletStatusButton : MonoBehaviour
     
     void Start()
     {
-        // Auto-find AppKit initializer if not assigned
+        // Auto-find components if not assigned
         if (appKitInitializer == null)
         {
             appKitInitializer = FindFirstObjectByType<AppKitInitializer>();
@@ -41,6 +44,15 @@ public class WalletStatusButton : MonoBehaviour
             {
                 Debug.LogWarning("WalletStatusButton: No AppKitInitializer found in scene!");
                 return;
+            }
+        }
+        
+        if (apiClient == null)
+        {
+            apiClient = FindFirstObjectByType<AuthenticatedAPIClient>();
+            if (apiClient == null)
+            {
+                Debug.LogWarning("WalletStatusButton: No AuthenticatedAPIClient found in scene!");
             }
         }
         
@@ -108,8 +120,19 @@ public class WalletStatusButton : MonoBehaviour
         if (appKitInitializer == null) return;
         
         isInitialized = appKitInitializer.IsInitialized;
-        isWalletConnected = appKitInitializer.IsWalletConnected;
-        connectedAddress = appKitInitializer.ConnectedWalletAddress;
+        
+        // Use API client authentication state if available (includes SIWE)
+        if (apiClient != null)
+        {
+            isWalletConnected = apiClient.IsReadyForRequests();
+            connectedAddress = apiClient.GetConnectedAddress();
+        }
+        else
+        {
+            // Fallback to basic wallet connection
+            isWalletConnected = appKitInitializer.IsWalletConnected;
+            connectedAddress = appKitInitializer.ConnectedWalletAddress;
+        }
     }
     
     void OnGUI()
@@ -193,8 +216,20 @@ public class WalletStatusButton : MonoBehaviour
         }
         else
         {
-            Debug.Log("WalletStatusButton: Opening wallet connection modal");
-            appKitInitializer.OpenWalletModal();
+            // Check if wallet is connected but not SIWE authenticated
+            bool walletConnected = appKitInitializer.IsWalletConnected;
+            bool siweRequired = appKitInitializer.IsSIWEEnabled;
+            
+            if (walletConnected && siweRequired && apiClient != null)
+            {
+                Debug.Log("WalletStatusButton: Wallet connected but SIWE authentication needed");
+                apiClient.TriggerSIWEAuthenticationIfNeeded();
+            }
+            else
+            {
+                Debug.Log("WalletStatusButton: Opening wallet connection modal");
+                appKitInitializer.OpenWalletModal();
+            }
         }
     }
     

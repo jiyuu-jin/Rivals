@@ -4,9 +4,9 @@ import { parseUnits } from "viem";
 import { z } from "zod";
 import RivalsToken from "../../../RivalsToken.json";
 import { getClientsByChainId, SupportedChainId } from "@/app/clients";
+import { requireAuth, getOrCreateUser } from "@/app/lib/auth";
 
 const trapSchema = z.object({
-  owner_username: z.string(),
   latitude: z.number(),
   longitude: z.number(),
   chainId: z.string().optional() as z.ZodOptional<z.ZodType<SupportedChainId>>,
@@ -14,6 +14,9 @@ const trapSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication
+    const session = await requireAuth(request);
+    
     const body = await request.json();
     const parsed = trapSchema.safeParse(body);
 
@@ -21,14 +24,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.message }, { status: 400 });
     }
 
-    const { owner_username, latitude, longitude, chainId } = parsed.data;
+    const { latitude, longitude, chainId } = parsed.data;
 
     const db = pg();
-    const results = await db`SELECT id, evm_address FROM users WHERE username = ${owner_username} LIMIT 1`;
-    if (results.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-    const address = results[0].evm_address as `0x${string}`;
+    const user = await getOrCreateUser(db, session.address);
+    const address = session.address as `0x${string}`;
 
     const { publicClient, walletClient, contractAddress } = getClientsByChainId(chainId);
     const balance = await publicClient.readContract({
@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
 
     const result = await db`
       INSERT INTO traps (owner, location)
-      VALUES (${results[0].id}, point(${longitude}, ${latitude}))
+      VALUES (${user.id}, point(${longitude}, ${latitude}))
+      RETURNING id, owner, location
     `;
 
     return NextResponse.json({
@@ -65,6 +66,11 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error("Error creating trap:", error);
+    
+    if (error instanceof Error && error.message === "Authentication required") {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+    
     return NextResponse.json({
       error: "Failed to create trap"
     }, { status: 500 });

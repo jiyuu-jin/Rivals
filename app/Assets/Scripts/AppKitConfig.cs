@@ -11,18 +11,25 @@ public class ReownAppKitConfig : ScriptableObject
     [Tooltip("Your AppKit project ID from Reown Dashboard (https://cloud.reown.com)")]
     public string projectId = "YOUR PROJECT ID";
     
+    [Header("SIWE Authentication")]
+    [Tooltip("Enable SIWE (Sign In With Ethereum) authentication")]
+    public bool enableSIWE = true;
+    
+    [Tooltip("Base URL of your backend server (e.g., https://rivals.nyc or http://localhost:3000)")]
+    public string serverBaseUrl = "https://rivals.nyc";
+    
     [Header("Metadata")]
     [Tooltip("Name of your game")]
-    public string gameName = "My Game";
+    public string gameName = "Rivals";
     
     [Tooltip("Short description of your game")]
     [TextArea(3, 5)]
-    public string gameDescription = "Short description";
+    public string gameDescription = "Please sign with your account to authenticate with Rivals";
     
     [Tooltip("URL for your game website")]
-    public string gameUrl = "https://example.com";
+    public string gameUrl = "https://rivals.nyc";
     
     [Tooltip("URL for your game icon")]
-    public string iconUrl = "https://example.com/logo.png";
+    public string iconUrl = "https://rivals.nyc/logo.png";
 }
 

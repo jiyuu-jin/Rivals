@@ -12,6 +12,10 @@ public class LocationMonitor : MonoBehaviour
     private IEnumerator coroutine;
 
     ObjectSpawner m_ObjectSpawner;
+    
+    [Header("Authentication")]
+    [Tooltip("Reference to the authenticated API client")]
+    public AuthenticatedAPIClient apiClient;
 
     Dictionary<int, GameObject> spawnedTrapObjects = new Dictionary<int, GameObject>();
     
@@ -25,6 +29,16 @@ public class LocationMonitor : MonoBehaviour
 
     void Start()
     {
+        // Auto-find API client if not assigned
+        if (apiClient == null)
+        {
+            apiClient = FindFirstObjectByType<AuthenticatedAPIClient>();
+            if (apiClient == null)
+            {
+                Debug.LogWarning("LocationMonitor: No AuthenticatedAPIClient found in scene! Please add one for authenticated API requests.");
+            }
+        }
+        
         coroutine = Routine();
         StartCoroutine(coroutine);
 
@@ -85,59 +99,63 @@ public class LocationMonitor : MonoBehaviour
         {
             while (true)
             {
-                // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
-                Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
-
-                string json_body = "{ \"username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
-                using (UnityWebRequest www = UnityWebRequest.Post("https://rivals.nyc/api/movement", json_body, "application/json"))
+                // Check if API client is ready for authenticated requests
+                if (apiClient != null && apiClient.IsReadyForRequests())
                 {
-                    yield return www.SendWebRequest();
+                    // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
+                    Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
-                    if (www.result != UnityWebRequest.Result.Success)
-                    {
-                        Debug.LogError(www.error);
-                    }
-                    else
-                    {
-                        MovementResponse response = JsonUtility.FromJson<MovementResponse>(www.downloadHandler.text);
-                        
-                        // Update balance display
-                        UpdateBalanceDisplay(response.balance);
-                        
-                        foreach (Trap trap in response.traps)
-                        {
-                            // Check if we already have this trap object spawned
-                            if (!spawnedTrapObjects.ContainsKey(trap.id))
+                    string json_body = "{ \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
+                    
+                    // Use authenticated API client
+                    yield return StartCoroutine(apiClient.MakeAuthenticatedRequest("movement", json_body, 
+                        (response) => {
+                            MovementResponse movementResponse = JsonUtility.FromJson<MovementResponse>(response);
+                            
+                            // Update balance display
+                            UpdateBalanceDisplay(movementResponse.balance);
+                            
+                            foreach (Trap trap in movementResponse.traps)
                             {
-                                Debug.Log($"TRAP DEBUG: Spawning trap from server: {trap.id} at ({trap.latitude}, {trap.longitude})");
-
-                                // Instead of using AR raycast hit, spawn in front of player
-                                Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
-                                if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
+                                // Check if we already have this trap object spawned
+                                if (!spawnedTrapObjects.ContainsKey(trap.id))
                                 {
-                                    Debug.Log($"TRAP DEBUG: Attempting to spawn trap {trap.id} at position {spawnPosition}");
-                                    if (m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up))
+                                    Debug.Log($"TRAP DEBUG: Spawning trap from server: {trap.id} at ({trap.latitude}, {trap.longitude})");
+
+                                    // Instead of using AR raycast hit, spawn in front of player
+                                    Vector3 spawnPosition = GetGroundPositionInFrontOfPlayer();
+                                    if (spawnPosition != Vector3.zero) // Check if we found a valid ground position
                                     {
-                                        Debug.Log($"TRAP DEBUG: Successfully spawned object for trap {trap.id}, starting initialization");
-                                        // Find and initialize the spawned object immediately
-                                        InitializeDiscoveredTrapImmediate(trap.id, spawnPosition);
+                                        Debug.Log($"TRAP DEBUG: Attempting to spawn trap {trap.id} at position {spawnPosition}");
+                                        if (m_ObjectSpawner.TrySpawnObject(spawnPosition, Vector3.up))
+                                        {
+                                            Debug.Log($"TRAP DEBUG: Successfully spawned object for trap {trap.id}, starting initialization");
+                                            // Find and initialize the spawned object immediately
+                                            InitializeDiscoveredTrapImmediate(trap.id, spawnPosition);
+                                        }
+                                        else
+                                        {
+                                            Debug.LogWarning($"TRAP DEBUG: Failed to spawn object for trap {trap.id}");
+                                        }
                                     }
                                     else
                                     {
-                                        Debug.LogWarning($"TRAP DEBUG: Failed to spawn object for trap {trap.id}");
+                                        Debug.LogWarning($"TRAP DEBUG: Could not find valid ground position for trap {trap.id}");
                                     }
                                 }
                                 else
                                 {
-                                    Debug.LogWarning($"TRAP DEBUG: Could not find valid ground position for trap {trap.id}");
+                                    Debug.Log($"TRAP DEBUG: Skipping trap {trap.id} - already spawned");
                                 }
                             }
-                            else
-                            {
-                                Debug.Log($"TRAP DEBUG: Skipping trap {trap.id} - already spawned");
-                            }
-                        }
-                    }
+                        }, 
+                        (error) => {
+                            Debug.LogError($"Movement API error: {error}");
+                        }));
+                }
+                else
+                {
+                    Debug.LogWarning("LocationMonitor: Wallet not connected or API client not ready. Waiting for authentication...");
                 }
 
                 yield return new WaitForSeconds(1);
@@ -182,34 +200,36 @@ public class LocationMonitor : MonoBehaviour
 
     public IEnumerator PlaceTrap(System.Action<int> onTrapPlaced = null)
     {
+        if (apiClient == null || !apiClient.IsReadyForRequests())
+        {
+            Debug.LogError("PlaceTrap: API client not ready or wallet not connected");
+            onTrapPlaced?.Invoke(-1);
+            yield break;
+        }
+        
         // If the connection succeeded, this retrieves the device's current location and displays it in the Console window.
         Debug.Log("Location: " + Input.location.lastData.latitude + " " + Input.location.lastData.longitude + " " + Input.location.lastData.altitude + " " + Input.location.lastData.horizontalAccuracy + " " + Input.location.lastData.timestamp);
 
-        string json_body = "{ \"owner_username\": \"player1\", \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
-        using (UnityWebRequest www = UnityWebRequest.Post("https://rivals.nyc/api/place-trap", json_body, "application/json"))
-        {
-            yield return www.SendWebRequest();
-
-            if (www.result != UnityWebRequest.Result.Success)
-            {
-                Debug.LogError(www.error);
-                onTrapPlaced?.Invoke(-1); // Signal failure
-            }
-            else
-            {
-                PlaceTrapResponse response = JsonUtility.FromJson<PlaceTrapResponse>(www.downloadHandler.text);
-                if (response != null && response.trap != null)
+        string json_body = "{ \"latitude\": " + Input.location.lastData.latitude + ", \"longitude\": " + Input.location.lastData.longitude + ", \"chainId\": \"" + currentChain + "\" }";
+        
+        yield return StartCoroutine(apiClient.MakeAuthenticatedRequest("place-trap", json_body,
+            (response) => {
+                PlaceTrapResponse placeTrapResponse = JsonUtility.FromJson<PlaceTrapResponse>(response);
+                if (placeTrapResponse != null && placeTrapResponse.trap != null)
                 {
-                    Debug.Log("Trap placed: " + response.trap.id + " at " + response.trap.location);
-                    onTrapPlaced?.Invoke(response.trap.id); // Return the trap ID
+                    Debug.Log("Trap placed: " + placeTrapResponse.trap.id + " at " + placeTrapResponse.trap.location);
+                    onTrapPlaced?.Invoke(placeTrapResponse.trap.id); // Return the trap ID
                 }
                 else
                 {
                     Debug.LogError("Failed to parse trap placement response");
                     onTrapPlaced?.Invoke(-1); // Signal failure
                 }
-            }
-        }
+            },
+            (error) => {
+                Debug.LogError($"Place trap API error: {error}");
+                onTrapPlaced?.Invoke(-1); // Signal failure
+            }));
     }
     
     void InitializeDiscoveredTrapImmediate(int trapId, Vector3 spawnPosition)

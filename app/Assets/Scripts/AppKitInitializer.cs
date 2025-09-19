@@ -77,6 +77,12 @@ public class AppKitInitializer : MonoBehaviour
             
             await AppKit.InitializeAsync(config);
             
+            // SIWE will be handled manually after wallet connection
+            if (appKitConfig.enableSIWE)
+            {
+                Debug.Log("AppKitInitializer: SIWE authentication will be handled manually after wallet connection");
+            }
+            
             isInitialized = true;
             Debug.Log("AppKitInitializer: Reown AppKit initialization completed successfully!");
         }
@@ -296,4 +302,14 @@ public class AppKitInitializer : MonoBehaviour
         Debug.Log("AppKitInitializer: Wallet connected - ready for blockchain interactions!");
         // Add your game-specific logic here
     }
+    
+    /// <summary>
+    /// Get SIWE configuration from the app config
+    /// </summary>
+    public bool IsSIWEEnabled => appKitConfig != null && appKitConfig.enableSIWE;
+    
+    /// <summary>
+    /// Get server base URL for SIWE authentication
+    /// </summary>
+    public string GetServerBaseUrl => appKitConfig?.serverBaseUrl ?? "https://rivals.nyc";
 }
